@@ -18,10 +18,10 @@ class OrderItem {
   factory OrderItem.fromJson(Map<String, dynamic> json) {
     return OrderItem(
       id: json['id'] ?? 0,
-      product: json['product'] != null 
+      product: json['product'] is Map<String, dynamic>
           ? Product.fromJson(json['product'])
           : Product(
-              id: json['productId'] ?? 0,
+              id: json['product'] is int ? json['product'] : (json['productId'] ?? 0),
               name: json['productName'] ?? 'Unknown Product',
               sku: json['productSku'] ?? '',
               quantity: 0,

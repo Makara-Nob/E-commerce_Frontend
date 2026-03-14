@@ -20,6 +20,7 @@ class Product {
   final List<ProductVariant> variants;
   final int viewCount;
   final String? imageUrl;
+  final List<String> images;
 
   Product({
     required this.id,
@@ -41,6 +42,7 @@ class Product {
     this.variants = const [],
     this.viewCount = 0,
     this.imageUrl,
+    this.images = const [],
   });
 
   factory Product.fromJson(Map<String, dynamic> json) {
@@ -67,6 +69,10 @@ class Product {
           [],
       viewCount: json['viewCount'] ?? 0,
       imageUrl: json['imageUrl'],
+      images: (json['images'] as List<dynamic>?)
+              ?.map((e) => e.toString())
+              .toList() ??
+          [],
     );
   }
 
@@ -94,7 +100,7 @@ class Product {
 }
 
 class Category {
-  final int id;
+  final String id;
   final String name;
   final String? description;
 
@@ -106,7 +112,7 @@ class Category {
 
   factory Category.fromJson(Map<String, dynamic> json) {
     return Category(
-      id: json['id'] ?? 0,
+      id: json['id']?.toString() ?? json['_id']?.toString() ?? '',
       name: json['name'] ?? '',
       description: json['description'],
     );
@@ -122,7 +128,7 @@ class Category {
 }
 
 class Supplier {
-  final int id;
+  final String id;
   final String name;
   final String? contactPerson;
   final String? phone;
@@ -138,7 +144,7 @@ class Supplier {
 
   factory Supplier.fromJson(Map<String, dynamic> json) {
     return Supplier(
-      id: json['id'] ?? 0,
+      id: json['id']?.toString() ?? json['_id']?.toString() ?? '',
       name: json['name'] ?? '',
       contactPerson: json['contactPerson'],
       phone: json['phone'],
@@ -158,21 +164,24 @@ class Supplier {
 }
 
 class Brand {
-  final int id;
+  final String id;
   final String name;
   final String? description;
+  final String? logoUrl;
 
   Brand({
     required this.id,
     required this.name,
     this.description,
+    this.logoUrl,
   });
 
   factory Brand.fromJson(Map<String, dynamic> json) {
     return Brand(
-      id: json['id'] ?? 0,
+      id: json['id']?.toString() ?? json['_id']?.toString() ?? '',
       name: json['name'] ?? '',
       description: json['description'],
+      logoUrl: json['logoUrl'],
     );
   }
 
@@ -181,6 +190,7 @@ class Brand {
       'id': id,
       'name': name,
       'description': description,
+      'logoUrl': logoUrl,
     };
   }
 }

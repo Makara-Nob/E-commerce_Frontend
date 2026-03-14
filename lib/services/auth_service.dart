@@ -39,9 +39,8 @@ class AuthService {
 
   // Validate token
   Future<ApiResponse<bool>> validateToken() async {
-    return await _apiService.post<bool>(
+    return await _apiService.get<bool>(
       ApiConstants.validateToken,
-      body: {},
       requiresAuth: true,
       fromJson: (json) => json as bool,
     );

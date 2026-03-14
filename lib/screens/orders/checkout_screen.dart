@@ -5,6 +5,7 @@ import '../../providers/cart_provider.dart';
 import '../../providers/order_provider.dart';
 import '../../theme/app_colors.dart';
 import 'order_success_screen.dart';
+import 'aba_checkout_screen.dart';
 
 class CheckoutScreen extends StatefulWidget {
   const CheckoutScreen({super.key});
@@ -57,17 +58,32 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
         deliveryPhone: _phoneController.text,
         notes: _noteController.text,
         items: items,
+        paymentMethod: 'ABA_PAYWAY', // Or let user select this if you implement radio buttons
       );
 
       if (!mounted) return;
 
       if (success) {
-        await cartProvider.clearCart();
-        Navigator.of(context).pushReplacement(
-          MaterialPageRoute(
-            builder: (_) => const OrderSuccessScreen(),
-          ),
-        );
+        cartProvider.clearLocalCart();
+        
+        final order = orderProvider.currentOrder;
+        
+        if (order != null && order.paywayPayload != null && order.paywayApiUrl != null) {
+          Navigator.of(context).pushReplacement(
+            MaterialPageRoute(
+              builder: (_) => AbaCheckoutScreen(
+                paywayPayload: order.paywayPayload!,
+                paywayApiUrl: order.paywayApiUrl!,
+              ),
+            ),
+          );
+        } else {
+           Navigator.of(context).pushReplacement(
+            MaterialPageRoute(
+              builder: (_) => const OrderSuccessScreen(),
+            ),
+          );
+        }
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(

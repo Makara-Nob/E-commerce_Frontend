@@ -9,15 +9,11 @@ class OrderProvider with ChangeNotifier {
   Order? _currentOrder;
   bool _isLoading = false;
   String? _errorMessage;
-  int _currentPage = 0;
-  int _totalPages = 0;
-  bool _hasMore = true;
 
   List<Order> get orders => _orders;
   Order? get currentOrder => _currentOrder;
   bool get isLoading => _isLoading;
   String? get errorMessage => _errorMessage;
-  bool get hasMore => _hasMore;
 
   // Create order
   Future<bool> createOrder({
@@ -25,6 +21,7 @@ class OrderProvider with ChangeNotifier {
     String? deliveryPhone,
     String? notes,
     required List<Map<String, dynamic>> items,
+    String paymentMethod = 'ABA_PAYWAY',
   }) async {
     _isLoading = true;
     _errorMessage = null;
@@ -36,6 +33,7 @@ class OrderProvider with ChangeNotifier {
         deliveryPhone: deliveryPhone,
         notes: notes,
         items: items,
+        paymentMethod: paymentMethod,
       );
 
       if (response.success && response.data != null) {
@@ -57,31 +55,20 @@ class OrderProvider with ChangeNotifier {
     }
   }
 
-  // Load orders (with pagination)
+  // Load orders
   Future<void> loadOrders({bool refresh = false}) async {
-    if (refresh) {
-      _orders = [];
-      _currentPage = 0;
-      _hasMore = true;
-    }
-
-    if (_isLoading || !_hasMore) return;
-
     _isLoading = true;
     _errorMessage = null;
+    if (refresh) {
+      _orders = [];
+    }
     notifyListeners();
 
     try {
-      final response = await _orderService.getMyOrders(
-        page: _currentPage,
-        limit: 20,
-      );
+      final response = await _orderService.getMyOrders();
 
       if (response.success && response.data != null) {
-        _orders.addAll(response.data!.orders);
-        _totalPages = response.data!.totalPages;
-        _currentPage++;
-        _hasMore = _currentPage < _totalPages;
+        _orders = response.data!;
       } else {
         _errorMessage = response.message;
       }
@@ -112,6 +99,44 @@ class OrderProvider with ChangeNotifier {
     } finally {
       _isLoading = false;
       notifyListeners();
+    }
+  }
+
+  // Check payment status manually
+  Future<bool> checkPaymentStatus(int id) async {
+    _isLoading = true;
+    _errorMessage = null;
+    notifyListeners();
+
+    try {
+      final response = await _orderService.checkPaymentStatus(id);
+
+      if (response.success && response.data != null) {
+        // Update current order if it matches
+        if (_currentOrder?.id == id) {
+          _currentOrder = response.data;
+        }
+        
+        // Update order in list if it exists
+        final index = _orders.indexWhere((o) => o.id == id);
+        if (index != -1) {
+          _orders[index] = response.data!;
+        }
+        
+        _isLoading = false;
+        notifyListeners();
+        return true;
+      } else {
+        _errorMessage = response.message;
+        _isLoading = false;
+        notifyListeners();
+        return false;
+      }
+    } catch (e) {
+      _errorMessage = 'Failed to check payment status: $e';
+      _isLoading = false;
+      notifyListeners();
+      return false;
     }
   }
 

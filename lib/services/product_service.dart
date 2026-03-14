@@ -12,8 +12,8 @@ class ProductService {
     int page = 1,
     int limit = 10,
     String? search,
-    int? categoryId,
-    int? brandId, 
+    String? categoryId,
+    String? brandId,
     double? minPrice,
     double? maxPrice,
     String? sortBy,
@@ -74,6 +74,48 @@ class ProductService {
       return ApiResponse<List<Product>>(
         success: false,
         message: 'Failed to load related products: $e',
+        error: e.toString(),
+      );
+    }
+  }
+
+  // Get popular products (sorted by view count)
+  Future<ApiResponse<ProductListResponse>> getPopularProducts({
+    int page = 1,
+    int limit = 10,
+  }) async {
+    try {
+      final response = await _apiService.get<ProductListResponse>(
+        ApiConstants.popularProducts(page: page, limit: limit),
+        requiresAuth: false,
+        fromJson: (json) => ProductListResponse.fromJson(json),
+      );
+      return response;
+    } catch (e) {
+      return ApiResponse<ProductListResponse>(
+        success: false,
+        message: 'Failed to fetch popular products: $e',
+        error: e.toString(),
+      );
+    }
+  }
+
+  // Get latest / new arrival products (sorted by createdAt desc)
+  Future<ApiResponse<ProductListResponse>> getLatestProducts({
+    int page = 1,
+    int limit = 10,
+  }) async {
+    try {
+      final response = await _apiService.get<ProductListResponse>(
+        ApiConstants.latestProducts(page: page, limit: limit),
+        requiresAuth: false,
+        fromJson: (json) => ProductListResponse.fromJson(json),
+      );
+      return response;
+    } catch (e) {
+      return ApiResponse<ProductListResponse>(
+        success: false,
+        message: 'Failed to fetch latest products: $e',
         error: e.toString(),
       );
     }

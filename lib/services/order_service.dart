@@ -12,12 +12,14 @@ class OrderService {
     String? deliveryPhone,
     String? notes,
     required List<Map<String, dynamic>> items,
+    String paymentMethod = 'ABA_PAYWAY',
   }) async {
     final request = OrderRequest(
       shippingAddress: deliveryAddress,
       deliveryPhone: deliveryPhone,
       notes: notes,
       items: items,
+      paymentMethod: paymentMethod,
     );
 
     return await _apiService.post<Order>(
@@ -28,42 +30,21 @@ class OrderService {
     );
   }
 
-  // Get my orders with filters
-  Future<ApiResponse<OrderListResponse>> getMyOrders({
+  // Get my orders
+  Future<ApiResponse<List<Order>>> getMyOrders({
     int page = 0,
     int limit = 20,
     String? status,
     String? sortBy,
     String? sortDirection,
   }) async {
-    final Map<String, dynamic> filters = {
-      'page': page,
-      'size': limit,
-    };
-
-    if (status != null) filters['status'] = status;
-    if (sortBy != null) filters['sortBy'] = sortBy;
-    if (sortDirection != null) filters['sortDirection'] = sortDirection;
-
-    final response = await _apiService.post<OrderListResponse>(
+    // The backend /api/v1/orders/my-orders is a GET request and returns an array of orders directly in `data`.
+    final response = await _apiService.getList<Order>(
       ApiConstants.myOrders,
-      body: filters,
       requiresAuth: true,
-      fromJson: (json) => OrderListResponse.fromJson(json),
+      fromJson: (json) => Order.fromJson(json),
     );
 
-    // Fallback for Admin or if my-orders endpoint fails for role mismatch
-    if (!response.success && (response.message.contains('session') || response.message.contains('expired') || response.error.toString().contains('401'))) {
-       print('⚠️ OrderService: my-orders failed with 401. Trying getAllOrders (fallback for Admin)...');
-       // Try fetching all orders (Admin endpoint) might work if my-orders is restricted
-       // Note: This assumes /api/v1/orders supports GET. If it requires parameters, might need to adjust.
-       return await _apiService.get<OrderListResponse>(
-         '${ApiConstants.orders}?page=$page&size=$limit', // Try GET format
-         requiresAuth: true,
-         fromJson: (json) => OrderListResponse.fromJson(json),
-       );
-    }
-    
     return response;
   }
 
@@ -73,6 +54,16 @@ class OrderService {
       ApiConstants.orderById(id),
       requiresAuth: true,
       fromJson: (json) => Order.fromJson(json),
+    );
+  }
+
+  // Check payment status manually
+  Future<ApiResponse<Order>> checkPaymentStatus(int id) async {
+    return await _apiService.post<Order>(
+      ApiConstants.checkPayment(id),
+      body: {}, // empty body
+      requiresAuth: true,
+      fromJson: (json) => Order.fromJson(json['order']),
     );
   }
 }

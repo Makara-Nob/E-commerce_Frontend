@@ -43,8 +43,8 @@ class _OrderListScreenState extends State<OrderListScreen> {
     switch (status.toLowerCase()) {
       case 'pending':
         return AppColors.accentOrange;
-      case 'processing': 
-        return Colors.blue;
+      case 'processing':
+        return AppColors.infoLight;
       case 'completed':
       case 'delivered':
         return AppColors.successLight;
@@ -68,11 +68,7 @@ class _OrderListScreenState extends State<OrderListScreen> {
                 padding: const EdgeInsets.all(16.0),
                 child: Row(
                   children: const [
-                    Icon(
-                      Icons.receipt_long,
-                      color: Colors.white,
-                      size: 28,
-                    ),
+                    Icon(Icons.receipt_long, color: Colors.white, size: 28),
                     SizedBox(width: 12),
                     Text(
                       'My Orders',
@@ -87,7 +83,7 @@ class _OrderListScreenState extends State<OrderListScreen> {
               ),
             ),
           ),
-          
+
           Expanded(
             child: Consumer<OrderProvider>(
               builder: (context, orderProvider, child) {
@@ -103,7 +99,10 @@ class _OrderListScreenState extends State<OrderListScreen> {
                 }
 
                 // Guest User State
-                final isAuthenticated = Provider.of<AuthProvider>(context, listen: false).isAuthenticated;
+                final isAuthenticated = Provider.of<AuthProvider>(
+                  context,
+                  listen: false,
+                ).isAuthenticated;
                 if (!isAuthenticated) {
                   return EmptyState(
                     icon: Icons.lock_outline,
@@ -118,7 +117,8 @@ class _OrderListScreenState extends State<OrderListScreen> {
                   );
                 }
 
-                if (orderProvider.errorMessage != null && orderProvider.orders.isEmpty) {
+                if (orderProvider.errorMessage != null &&
+                    orderProvider.orders.isEmpty) {
                   return EmptyState(
                     icon: Icons.error_outline,
                     title: 'Something went wrong',
@@ -137,7 +137,9 @@ class _OrderListScreenState extends State<OrderListScreen> {
                     onAction: () {
                       // Navigate to products (Home Screen)
                       Navigator.of(context).pushAndRemoveUntil(
-                        MaterialPageRoute(builder: (_) => const HomeScreen()), // Defaults to index 0 (Products)
+                        MaterialPageRoute(
+                          builder: (_) => const HomeScreen(),
+                        ), // Defaults to index 0 (Products)
                         (route) => false,
                       );
                     },
@@ -149,15 +151,18 @@ class _OrderListScreenState extends State<OrderListScreen> {
                   child: ListView.separated(
                     padding: const EdgeInsets.all(16),
                     itemCount: orderProvider.orders.length,
-                    separatorBuilder: (context, index) => const SizedBox(height: 16),
+                    separatorBuilder: (context, index) =>
+                        const SizedBox(height: 16),
                     itemBuilder: (context, index) {
                       final order = orderProvider.orders[index];
                       final statusColor = _getStatusColor(order.status);
-                      
+
                       return Card(
                         clipBehavior: Clip.antiAlias,
                         child: Theme(
-                          data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
+                          data: Theme.of(
+                            context,
+                          ).copyWith(dividerColor: Colors.transparent),
                           child: ExpansionTile(
                             tilePadding: const EdgeInsets.all(16),
                             leading: Container(
@@ -175,17 +180,22 @@ class _OrderListScreenState extends State<OrderListScreen> {
                               children: [
                                 Text(
                                   '#${order.id}',
-                                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                                    fontWeight: FontWeight.bold,
-                                  ),
+                                  style: Theme.of(context).textTheme.titleMedium
+                                      ?.copyWith(fontWeight: FontWeight.bold),
                                 ),
                                 const Spacer(),
                                 Container(
-                                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 8,
+                                    vertical: 4,
+                                  ),
                                   decoration: BoxDecoration(
                                     color: statusColor.withOpacity(0.1),
                                     borderRadius: BorderRadius.circular(8),
-                                    border: Border.all(color: statusColor.withOpacity(0.5), width: 0.5),
+                                    border: Border.all(
+                                      color: statusColor.withOpacity(0.5),
+                                      width: 0.5,
+                                    ),
                                   ),
                                   child: Text(
                                     order.status.toUpperCase(),
@@ -204,29 +214,42 @@ class _OrderListScreenState extends State<OrderListScreen> {
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
                                   Text(
-                                    _formatDate(order.createdAt ?? DateTime.now()),
-                                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                                      color: Colors.grey[600],
+                                    _formatDate(
+                                      order.createdAt ?? DateTime.now(),
                                     ),
+                                    style: Theme.of(context).textTheme.bodySmall
+                                        ?.copyWith(color: Colors.grey[600]),
                                   ),
                                   const SizedBox(height: 4),
                                   Text(
                                     _formatCurrency(order.totalAmount),
-                                    style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                                      fontWeight: FontWeight.bold,
-                                      color: Theme.of(context).colorScheme.primary,
-                                    ),
+                                    style: Theme.of(context)
+                                        .textTheme
+                                        .titleSmall
+                                        ?.copyWith(
+                                          fontWeight: FontWeight.bold,
+                                          color: Theme.of(
+                                            context,
+                                          ).colorScheme.primary,
+                                        ),
                                   ),
                                 ],
                               ),
                             ),
-                            trailing: const Icon(Icons.arrow_drop_down), // Explicit trailing to avoid confusion
+                            trailing: const Icon(
+                              Icons.arrow_drop_down,
+                            ), // Explicit trailing to avoid confusion
                             children: [
                               Container(
                                 decoration: BoxDecoration(
-                                  color: Theme.of(context).colorScheme.surfaceContainerHighest.withOpacity(0.3),
+                                  color: Theme.of(context)
+                                      .colorScheme
+                                      .surfaceContainerHighest
+                                      .withOpacity(0.3),
                                   border: Border(
-                                    top: BorderSide(color: Colors.grey.withOpacity(0.1)),
+                                    top: BorderSide(
+                                      color: Colors.grey.withOpacity(0.1),
+                                    ),
                                   ),
                                 ),
                                 padding: const EdgeInsets.all(16),
@@ -234,27 +257,79 @@ class _OrderListScreenState extends State<OrderListScreen> {
                                 child: Column(
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
-                                    _buildDetailRow(context, 'Delivery Address', order.deliveryAddress ?? 'N/A'),
+                                    _buildDetailRow(
+                                      context,
+                                      'Delivery Address',
+                                      order.deliveryAddress ?? 'N/A',
+                                    ),
                                     const SizedBox(height: 12),
-                                    _buildDetailRow(context, 'Contact', order.deliveryPhone ?? 'N/A'),
-                                    if(order.notes != null && order.notes!.isNotEmpty) ...[
+                                    _buildDetailRow(
+                                      context,
+                                      'Contact',
+                                      order.deliveryPhone ?? 'N/A',
+                                    ),
+                                    if (order.notes != null &&
+                                        order.notes!.isNotEmpty) ...[
                                       const SizedBox(height: 12),
-                                      _buildDetailRow(context, 'Notes', order.notes!),
+                                      _buildDetailRow(
+                                        context,
+                                        'Notes',
+                                        order.notes!,
+                                      ),
                                     ],
                                     const SizedBox(height: 16),
-                                    Align(
-                                      alignment: Alignment.centerRight,
-                                      child: TextButton.icon(
-                                        onPressed: () {
+                                    Row(
+                                      mainAxisAlignment: MainAxisAlignment.end,
+                                      children: [
+                                        if (order.status.toUpperCase() ==
+                                            'PENDING')
+                                          TextButton.icon(
+                                            onPressed: () async {
+                                              final success =
+                                                  await Provider.of<
+                                                        OrderProvider
+                                                      >(context, listen: false)
+                                                      .checkPaymentStatus(
+                                                        order.id!,
+                                                      );
+                                              if (context.mounted) {
+                                                ScaffoldMessenger.of(
+                                                  context,
+                                                ).showSnackBar(
+                                                  SnackBar(
+                                                    content: Text(
+                                                      success
+                                                          ? 'Payment Confirmed!'
+                                                          : 'Still Pending or Error',
+                                                    ),
+                                                  ),
+                                                );
+                                              }
+                                            },
+                                            icon: const Icon(Icons.sync),
+                                            label: const Text('Check Payment'),
+                                            style: TextButton.styleFrom(
+                                              foregroundColor:
+                                                  AppColors.primaryStart,
+                                            ),
+                                          ),
+                                        TextButton.icon(
+                                          onPressed: () {
                                             Navigator.of(context).push(
                                               MaterialPageRoute(
-                                                builder: (_) => OrderDetailScreen(order: order),
+                                                builder: (_) =>
+                                                    OrderDetailScreen(
+                                                      order: order,
+                                                    ),
                                               ),
                                             );
-                                        },
-                                        icon: const Icon(Icons.info_outline),
-                                        label: const Text('View Full Details'),
-                                      ),
+                                          },
+                                          icon: const Icon(Icons.info_outline),
+                                          label: const Text(
+                                            'View Full Details',
+                                          ),
+                                        ),
+                                      ],
                                     ),
                                   ],
                                 ),
@@ -280,15 +355,12 @@ class _OrderListScreenState extends State<OrderListScreen> {
       children: [
         Text(
           label,
-          style: Theme.of(context).textTheme.labelSmall?.copyWith(
-            color: Colors.grey[600],
-          ),
+          style: Theme.of(
+            context,
+          ).textTheme.labelSmall?.copyWith(color: Colors.grey[600]),
         ),
         const SizedBox(height: 2),
-        Text(
-          value,
-          style: Theme.of(context).textTheme.bodyMedium,
-        ),
+        Text(value, style: Theme.of(context).textTheme.bodyMedium),
       ],
     );
   }

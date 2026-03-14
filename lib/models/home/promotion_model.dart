@@ -1,14 +1,14 @@
 import '../product/product.dart';
 
 class PromotionModel {
-  final int id;
+  final String id;
   final String name;
   final String? description;
   final String discountType;
   final double discountValue;
   final DateTime startDate;
   final DateTime endDate;
-  final int productId;
+  final String productId;
   final String productName;
   final Product product;
 
@@ -27,15 +27,15 @@ class PromotionModel {
 
   factory PromotionModel.fromJson(Map<String, dynamic> json) {
     return PromotionModel(
-      id: json['id'] as int,
-      name: json['name'] as String,
+      id: json['id']?.toString() ?? '',
+      name: json['name'] as String? ?? '',
       description: json['description'] as String?,
-      discountType: json['discountType'] as String,
-      discountValue: (json['discountValue'] as num).toDouble(),
-      startDate: DateTime.parse(json['startDate']),
-      endDate: DateTime.parse(json['endDate']),
-      productId: json['productId'] as int,
-      productName: json['productName'] as String,
+      discountType: json['discountType'] as String? ?? '',
+      discountValue: (json['discountValue'] as num?)?.toDouble() ?? 0.0,
+      startDate: json['startDate'] != null ? DateTime.parse(json['startDate']) : DateTime.now(),
+      endDate: json['endDate'] != null ? DateTime.parse(json['endDate']) : DateTime.now(),
+      productId: json['productId']?.toString() ?? '',
+      productName: json['productName'] as String? ?? '',
       product: Product.fromJson(json['product'] ?? {}),
     );
   }

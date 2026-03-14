@@ -39,20 +39,23 @@ class ApiService {
       final url = Uri.parse('${ApiConstants.baseUrl}$endpoint');
       final headers = await _getHeaders(includeAuth: requiresAuth);
 
+      print('📤 ApiService: GET request to $endpoint');
       final response = await http.get(url, headers: headers).timeout(
         const Duration(seconds: 10),
         onTimeout: () {
           throw const SocketException('Connection timed out');
         },
       );
-      return _handleResponse<T>(response, fromJson);
-    } on SocketException {
+      return _handleResponse<T>(response, fromJson, endpoint);
+    } on SocketException catch (e) {
+      print('❌ ApiService: SocketException for $endpoint - $e');
       return ApiResponse<T>(
         success: false,
         message: 'No internet connection',
-        error: 'Network error',
+        error: e.toString(),
       );
     } catch (e) {
+      print('💥 ApiService: Exception for $endpoint - $e');
       return ApiResponse<T>(
         success: false,
         message: 'An error occurred: $e',
@@ -71,6 +74,7 @@ class ApiService {
       final url = Uri.parse('${ApiConstants.baseUrl}$endpoint');
       final headers = await _getHeaders(includeAuth: requiresAuth);
 
+      print('📤 ApiService: GET (List) request to $endpoint');
       final response = await http.get(url, headers: headers).timeout(
         const Duration(seconds: 10),
         onTimeout: () {
@@ -78,48 +82,16 @@ class ApiService {
         },
       );
 
-      final jsonResponse = jsonDecode(response.body);
-
-      // Check for success either via boolean 'success' or string 'status'
-      bool isSuccess = false;
-      if (jsonResponse.containsKey('success')) {
-        isSuccess = jsonResponse['success'] == true;
-      } else if (jsonResponse.containsKey('status')) {
-        final status = jsonResponse['status'];
-        isSuccess = status == 'success' || status == 'SUCCESS' || status == 'OK' || status == 200;
-      }
-
-      if (response.statusCode >= 200 && response.statusCode < 300) {
-        if (isSuccess && jsonResponse['data'] != null) {
-          final List<dynamic> dataList = jsonResponse['data'] is List ? jsonResponse['data'] : [];
-          final List<T> items = dataList.map((item) => fromJson(item)).toList();
-          
-          return ApiResponse<List<T>>(
-            success: true,
-            message: jsonResponse['message'] ?? 'Success',
-            data: items,
-          );
-        } else {
-             return ApiResponse<List<T>>(
-              success: false,
-              message: jsonResponse['message'] ?? 'Request failed',
-              error: jsonResponse['error'],
-             );
-        }
-      } else {
-        return ApiResponse<List<T>>(
-          success: false,
-          message: jsonResponse['message'] ?? 'Request failed',
-          error: jsonResponse['error'] ?? 'Unknown error',
-        );
-      }
-    } on SocketException {
+      return _handleResponseList<T>(response, fromJson, endpoint);
+    } on SocketException catch (e) {
+      print('❌ ApiService: SocketException for $endpoint - $e');
       return ApiResponse<List<T>>(
         success: false,
         message: 'No internet connection',
-        error: 'Network error',
+        error: e.toString(),
       );
     } catch (e) {
+      print('💥 ApiService: Exception for $endpoint - $e');
       return ApiResponse<List<T>>(
         success: false,
         message: 'An error occurred: $e',
@@ -138,6 +110,7 @@ class ApiService {
     try {
       final url = Uri.parse('${ApiConstants.baseUrl}$endpoint');
       final headers = await _getHeaders(includeAuth: requiresAuth);
+      print('📤 ApiService: POST request to $endpoint');
 
       final response = await http.post(
         url,
@@ -150,14 +123,16 @@ class ApiService {
         },
       );
 
-      return _handleResponse<T>(response, fromJson);
-    } on SocketException {
+      return _handleResponse<T>(response, fromJson, endpoint);
+    } on SocketException catch (e) {
+      print('❌ ApiService: SocketException for $endpoint - $e');
       return ApiResponse<T>(
         success: false,
         message: 'No internet connection',
-        error: 'Network error',
+        error: e.toString(),
       );
     } catch (e) {
+      print('💥 ApiService: Exception for $endpoint - $e');
       return ApiResponse<T>(
         success: false,
         message: 'An error occurred: $e',
@@ -182,6 +157,7 @@ class ApiService {
       }
       
       final headers = await _getHeaders(includeAuth: requiresAuth);
+      print('📤 ApiService: PUT request to $endpoint');
 
       final response = await http.put(
         url,
@@ -189,7 +165,7 @@ class ApiService {
         body: body != null ? jsonEncode(body) : null,
       );
 
-      return _handleResponse<T>(response, fromJson);
+      return _handleResponse<T>(response, fromJson, endpoint);
     } on SocketException {
       return ApiResponse<T>(
         success: false,
@@ -214,9 +190,10 @@ class ApiService {
     try {
       final url = Uri.parse('${ApiConstants.baseUrl}$endpoint');
       final headers = await _getHeaders(includeAuth: requiresAuth);
+      print('📤 ApiService: DELETE request to $endpoint');
 
       final response = await http.delete(url, headers: headers);
-      return _handleResponse<T>(response, fromJson);
+      return _handleResponse<T>(response, fromJson, endpoint);
     } on SocketException {
       return ApiResponse<T>(
         success: false,
@@ -235,8 +212,10 @@ class ApiService {
   // File Upload request
   Future<ApiResponse<String>> uploadFile(File file) async {
     try {
-      final url = Uri.parse('${ApiConstants.baseUrl}/api/v1/files/upload');
+      final endpoint = '/api/v1/files/upload';
+      final url = Uri.parse('${ApiConstants.baseUrl}$endpoint');
       final request = http.MultipartRequest('POST', url);
+      print('📤 ApiService: File Upload request to $endpoint');
       
       // Add headers (Auth)
       final headers = await _getHeaders(includeAuth: true);
@@ -258,7 +237,7 @@ class ApiService {
       final streamedResponse = await request.send();
       final response = await http.Response.fromStream(streamedResponse);
       
-      return _handleResponse<String>(response, null);
+      return _handleResponse<String>(response, null, endpoint);
     } on SocketException {
       return ApiResponse<String>(
         success: false,
@@ -278,6 +257,7 @@ class ApiService {
   ApiResponse<T> _handleResponse<T>(
     http.Response response,
     T Function(dynamic)? fromJson,
+    String endpoint,
   ) {
     try {
       print('📥 ApiService: Response status ${response.statusCode}');
@@ -295,10 +275,10 @@ class ApiService {
 
       if (response.statusCode >= 200 && response.statusCode < 300) {
         if (isSuccess) {
-            print('✅ ApiService: Success response');
+            print('✅ ApiService: Success response for $endpoint');
             return ApiResponse<T>.fromJson(jsonResponse, fromJson);
         } else {
-            print('❌ ApiService: Error response - ${jsonResponse['message']}');
+            print('❌ ApiService: Error response for $endpoint - ${jsonResponse['message']} (Status: ${jsonResponse['status']})');
             return ApiResponse<T>(
               success: false,
               message: jsonResponse['message'] ?? 'Request failed',
@@ -316,6 +296,61 @@ class ApiService {
     } catch (e) {
       print('💥 ApiService: Failed to parse response - $e');
       return ApiResponse<T>(
+        success: false,
+        message: 'Failed to parse response',
+        error: e.toString(),
+      );
+    }
+  }
+
+  // Handle HTTP response for Lists
+  ApiResponse<List<T>> _handleResponseList<T>(
+    http.Response response,
+    T Function(dynamic) fromJson,
+    String endpoint,
+  ) {
+    try {
+      print('📥 ApiService: Response status ${response.statusCode}');
+      print('📦 ApiService: Response body: ${response.body}');
+      final jsonResponse = jsonDecode(response.body);
+
+      bool isSuccess = false;
+      if (jsonResponse.containsKey('success')) {
+        isSuccess = jsonResponse['success'] == true;
+      } else if (jsonResponse.containsKey('status')) {
+        final status = jsonResponse['status'];
+        isSuccess = status == 'success' || status == 'SUCCESS' || status == 'OK' || status == 200;
+      }
+
+      if (response.statusCode >= 200 && response.statusCode < 300) {
+        if (isSuccess && jsonResponse['data'] != null) {
+          final List<dynamic> dataList = jsonResponse['data'] is List ? jsonResponse['data'] : [];
+          final List<T> items = dataList.map((item) => fromJson(item)).toList();
+          print('✅ ApiService: Success response for $endpoint (Found ${items.length} items)');
+          return ApiResponse<List<T>>(
+            success: true,
+            message: jsonResponse['message'] ?? 'Success',
+            data: items,
+          );
+        } else {
+             print('❌ ApiService: Error response for $endpoint - ${jsonResponse['message']}');
+             return ApiResponse<List<T>>(
+              success: false,
+              message: jsonResponse['message'] ?? 'Request failed',
+              error: jsonResponse['error'],
+             );
+        }
+      } else {
+        print('❌ ApiService: Error response for $endpoint - ${response.statusCode}');
+        return ApiResponse<List<T>>(
+          success: false,
+          message: jsonResponse['message'] ?? 'Request failed',
+          error: jsonResponse['error'] ?? 'Unknown error',
+        );
+      }
+    } catch (e) {
+      print('💥 ApiService: Failed to parse list response for $endpoint - $e');
+      return ApiResponse<List<T>>(
         success: false,
         message: 'Failed to parse response',
         error: e.toString(),

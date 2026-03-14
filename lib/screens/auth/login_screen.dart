@@ -15,7 +15,7 @@ class LoginScreen extends StatefulWidget {
 }
 
 class _LoginScreenState extends State<LoginScreen> {
-  final _usernameController = TextEditingController(text: 'makara');
+  final _usernameController = TextEditingController(text: 'admin@gmail.com');
   final _passwordController = TextEditingController(text: '88889999');
   final _formKey = GlobalKey<FormState>();
   bool _isLoading = false;
@@ -257,7 +257,7 @@ class _LoginScreenState extends State<LoginScreen> {
                     
                     const SizedBox(height: 24),
                     Text(
-                      'Default credentials:\nUsername: makara , Password: 88889999', // Updated to match previous file but kept concise
+                      'Default credentials:\nUsername: admin@gmail.com , Password: 88889999', // Updated to match previous file but kept concise
                       textAlign: TextAlign.center,
                       style: TextStyle(color: Colors.white.withOpacity(0.7), fontSize: 12),
                     ),

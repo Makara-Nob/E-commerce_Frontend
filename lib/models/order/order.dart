@@ -11,6 +11,10 @@ class Order {
   final String? notes;
   final DateTime? createdAt;
   final DateTime? updatedAt;
+  
+  // PayWay specific fields returned in checkout response
+  final Map<String, dynamic>? paywayPayload;
+  final String? paywayApiUrl;
 
   Order({
     required this.id,
@@ -23,23 +27,30 @@ class Order {
     this.notes,
     this.createdAt,
     this.updatedAt,
+    this.paywayPayload,
+    this.paywayApiUrl,
   });
 
   factory Order.fromJson(Map<String, dynamic> json) {
+    // Determine if the JSON is wrapped in { "order": {...}, "paywayPayload": {...} }
+    final orderJson = json.containsKey('order') ? json['order'] as Map<String, dynamic> : json;
+    
     return Order(
-      id: json['id'] ?? 0,
-      userId: json['userId'] ?? 0,
-      items: (json['items'] as List?)
+      id: orderJson['id'] ?? 0,
+      userId: orderJson['userId'] ?? 0,
+      items: (orderJson['items'] as List?)
               ?.map((item) => OrderItem.fromJson(item))
               .toList() ??
           [],
-      totalAmount: (json['totalAmount'] ?? 0).toDouble(),
-      status: json['status'] ?? '',
-      deliveryAddress: json['deliveryAddress'] ?? json['shippingAddress'],
-      deliveryPhone: json['deliveryPhone'],
-      notes: json['notes'],
-      createdAt: json['createdAt'] != null ? DateTime.parse(json['createdAt']) : null,
-      updatedAt: json['updatedAt'] != null ? DateTime.parse(json['updatedAt']) : null,
+      totalAmount: (orderJson['totalAmount'] ?? 0).toDouble(),
+      status: orderJson['status'] ?? '',
+      deliveryAddress: orderJson['deliveryAddress'] ?? orderJson['shippingAddress'],
+      deliveryPhone: orderJson['deliveryPhone'],
+      notes: orderJson['notes'],
+      createdAt: orderJson['createdAt'] != null ? DateTime.parse(orderJson['createdAt']) : null,
+      updatedAt: orderJson['updatedAt'] != null ? DateTime.parse(orderJson['updatedAt']) : null,
+      paywayPayload: json['paywayPayload'] as Map<String, dynamic>?,
+      paywayApiUrl: json['paywayApiUrl'] as String?,
     );
   }
 
@@ -55,6 +66,8 @@ class Order {
       'notes': notes,
       'createdAt': createdAt?.toIso8601String(),
       'updatedAt': updatedAt?.toIso8601String(),
+      'paywayPayload': paywayPayload,
+      'paywayApiUrl': paywayApiUrl,
     };
   }
 }

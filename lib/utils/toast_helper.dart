@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../theme/app_colors.dart';
 
 enum ToastType { success, error, warning, info }
 
@@ -11,11 +12,8 @@ class ToastHelper {
   }) {
     final overlay = Overlay.of(context);
     final overlayEntry = OverlayEntry(
-      builder: (context) => _ToastWidget(
-        message: message,
-        type: type,
-        duration: duration,
-      ),
+      builder: (context) =>
+          _ToastWidget(message: message, type: type, duration: duration),
     );
 
     overlay.insert(overlayEntry);
@@ -71,16 +69,15 @@ class _ToastWidgetState extends State<_ToastWidget>
       vsync: this,
     );
 
-    _fadeAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
-      CurvedAnimation(parent: _controller, curve: Curves.easeOut),
-    );
+    _fadeAnimation = Tween<double>(
+      begin: 0.0,
+      end: 1.0,
+    ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeOut));
 
     _slideAnimation = Tween<Offset>(
       begin: const Offset(0, -1),
       end: Offset.zero,
-    ).animate(
-      CurvedAnimation(parent: _controller, curve: Curves.easeOutCubic),
-    );
+    ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeOutCubic));
 
     _controller.forward();
 
@@ -100,13 +97,13 @@ class _ToastWidgetState extends State<_ToastWidget>
   Color _getBackgroundColor() {
     switch (widget.type) {
       case ToastType.success:
-        return Colors.green;
+        return AppColors.successLight;
       case ToastType.error:
-        return Colors.red;
+        return AppColors.errorLight;
       case ToastType.warning:
-        return Colors.orange;
+        return AppColors.accentOrange;
       case ToastType.info:
-        return Colors.blue;
+        return AppColors.infoLight;
     }
   }
 
@@ -150,11 +147,7 @@ class _ToastWidgetState extends State<_ToastWidget>
               ),
               child: Row(
                 children: [
-                  Icon(
-                    _getIcon(),
-                    color: Colors.white,
-                    size: 24,
-                  ),
+                  Icon(_getIcon(), color: Colors.white, size: 24),
                   const SizedBox(width: 12),
                   Expanded(
                     child: Text(

@@ -22,15 +22,15 @@ class OrderDetailScreen extends StatelessWidget {
   Color _getStatusColor(String status) {
     switch (status.toUpperCase()) {
       case 'PENDING':
-        return Colors.orange;
+        return AppColors.accentOrange;
       case 'PROCESSING':
-        return Colors.blue;
+        return AppColors.infoLight;
       case 'SHIPPED':
-        return Colors.purple;
+        return AppColors.primaryEnd;
       case 'DELIVERED':
-        return Colors.green;
+        return AppColors.successLight;
       case 'CANCELLED':
-        return Colors.red;
+        return AppColors.errorLight;
       default:
         return Colors.grey;
     }
@@ -69,45 +69,45 @@ class OrderDetailScreen extends StatelessWidget {
               ),
               child: Column(
                 children: [
-                   Container(
-                     padding: const EdgeInsets.all(16),
-                     decoration: BoxDecoration(
-                       shape: BoxShape.circle,
-                       color: statusColor.withOpacity(0.1),
-                     ),
-                     child: Icon(
-                       _getStatusIcon(order.status),
-                       color: statusColor,
-                       size: 32,
-                     ),
-                   ).animate().scale(curve: Curves.elasticOut),
-                   const SizedBox(height: 16),
-                   Text(
-                     order.status.toUpperCase(),
-                     style: theme.textTheme.headlineSmall?.copyWith(
-                       color: statusColor,
-                       fontWeight: FontWeight.bold,
-                       letterSpacing: 1.2,
-                     ),
-                   ),
-                   const SizedBox(height: 8),
-                   Text(
-                     'Order #${order.id}',
-                     style: theme.textTheme.bodyLarge?.copyWith(
-                       color: Colors.grey[600],
-                     ),
-                   ),
-                   const SizedBox(height: 4),
-                   Text(
-                     _formatDate(order.createdAt),
-                     style: theme.textTheme.bodyMedium?.copyWith(
-                       color: Colors.grey[500],
-                     ),
-                   ),
+                  Container(
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: statusColor.withOpacity(0.1),
+                    ),
+                    child: Icon(
+                      _getStatusIcon(order.status),
+                      color: statusColor,
+                      size: 32,
+                    ),
+                  ).animate().scale(curve: Curves.elasticOut),
+                  const SizedBox(height: 16),
+                  Text(
+                    order.status.toUpperCase(),
+                    style: theme.textTheme.headlineSmall?.copyWith(
+                      color: statusColor,
+                      fontWeight: FontWeight.bold,
+                      letterSpacing: 1.2,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    'Order #${order.id}',
+                    style: theme.textTheme.bodyLarge?.copyWith(
+                      color: Colors.grey[600],
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    _formatDate(order.createdAt),
+                    style: theme.textTheme.bodyMedium?.copyWith(
+                      color: Colors.grey[500],
+                    ),
+                  ),
                 ],
               ),
             ),
-            
+
             const SizedBox(height: 20),
 
             // Order Items List
@@ -154,7 +154,10 @@ class OrderDetailScreen extends StatelessWidget {
                                 color: Colors.grey[100],
                                 borderRadius: BorderRadius.circular(8),
                               ),
-                              child: const Icon(Icons.shopping_bag_outlined, color: Colors.grey),
+                              child: const Icon(
+                                Icons.shopping_bag_outlined,
+                                color: Colors.grey,
+                              ),
                             ),
                             const SizedBox(width: 16),
                             Expanded(
@@ -208,25 +211,29 @@ class OrderDetailScreen extends StatelessWidget {
                   // Delivery Info
                   Expanded(
                     child: _buildInfoCard(
-                      context, 
-                      'Delivery', 
+                      context,
+                      'Delivery',
                       Icons.local_shipping_outlined,
                       [
-                        if (order.deliveryAddress != null) order.deliveryAddress!,
+                        if (order.deliveryAddress != null)
+                          order.deliveryAddress!,
                         if (order.deliveryPhone != null) order.deliveryPhone!,
-                        if (order.deliveryAddress == null) 'No address provided',
+                        if (order.deliveryAddress == null)
+                          'No address provided',
                       ],
                     ),
                   ),
                   const SizedBox(width: 16),
-                   // Payment/Notes Info (using Notes for now as Payment info isn't in model shown)
+                  // Payment/Notes Info (using Notes for now as Payment info isn't in model shown)
                   Expanded(
                     child: _buildInfoCard(
-                      context, 
-                      'Notes', 
+                      context,
+                      'Notes',
                       Icons.note_alt_outlined,
                       [
-                         order.notes?.isNotEmpty == true ? order.notes! : 'No notes',
+                        order.notes?.isNotEmpty == true
+                            ? order.notes!
+                            : 'No notes',
                       ],
                     ),
                   ),
@@ -241,7 +248,9 @@ class OrderDetailScreen extends StatelessWidget {
               padding: const EdgeInsets.all(20),
               decoration: BoxDecoration(
                 color: Colors.white,
-                borderRadius: const BorderRadius.vertical(top: Radius.circular(32)),
+                borderRadius: const BorderRadius.vertical(
+                  top: Radius.circular(32),
+                ),
                 boxShadow: [
                   BoxShadow(
                     color: Colors.black.withOpacity(0.05),
@@ -252,7 +261,10 @@ class OrderDetailScreen extends StatelessWidget {
               ),
               child: Column(
                 children: [
-                  _buildSummaryRow('Subtotal', _formatCurrency(order.totalAmount)), // Assuming tax/shipping included or processed similarly
+                  _buildSummaryRow(
+                    'Subtotal',
+                    _formatCurrency(order.totalAmount),
+                  ), // Assuming tax/shipping included or processed similarly
                   const Padding(
                     padding: EdgeInsets.symmetric(vertical: 12),
                     child: Divider(),
@@ -278,19 +290,21 @@ class OrderDetailScreen extends StatelessWidget {
                   const SizedBox(height: 24),
                   // Action Buttons could go here (e.g. "Reorder", "Track")
                   SizedBox(
-                     width: double.infinity,
-                     child: OutlinedButton(
-                       onPressed: () {
-                         // TODO: Implement Reorder Logic
-                       },
-                       style: OutlinedButton.styleFrom(
-                         padding: const EdgeInsets.symmetric(vertical: 16),
-                         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                       ),
-                       child: const Text('Reorder Item'),
-                     ),
+                    width: double.infinity,
+                    child: OutlinedButton(
+                      onPressed: () {
+                        // TODO: Implement Reorder Logic
+                      },
+                      style: OutlinedButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(vertical: 16),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(16),
+                        ),
+                      ),
+                      child: const Text('Reorder Item'),
+                    ),
                   ),
-                   const SizedBox(height: 20),
+                  const SizedBox(height: 20),
                 ],
               ),
             ).animate().slideY(begin: 0.2, end: 0),
@@ -299,30 +313,41 @@ class OrderDetailScreen extends StatelessWidget {
       ),
     );
   }
-  
+
   IconData _getStatusIcon(String status) {
-     switch (status.toUpperCase()) {
-      case 'PENDING': return Icons.hourglass_empty;
-      case 'PROCESSING': return Icons.inventory_2_outlined;
-      case 'SHIPPED': return Icons.local_shipping_outlined;
-      case 'DELIVERED': return Icons.check_circle_outline;
-      case 'CANCELLED': return Icons.cancel_outlined;
-      default: return Icons.info_outline;
+    switch (status.toUpperCase()) {
+      case 'PENDING':
+        return Icons.hourglass_empty;
+      case 'PROCESSING':
+        return Icons.inventory_2_outlined;
+      case 'SHIPPED':
+        return Icons.local_shipping_outlined;
+      case 'DELIVERED':
+        return Icons.check_circle_outline;
+      case 'CANCELLED':
+        return Icons.cancel_outlined;
+      default:
+        return Icons.info_outline;
     }
   }
 
-  Widget _buildInfoCard(BuildContext context, String title, IconData icon, List<String> details) {
+  Widget _buildInfoCard(
+    BuildContext context,
+    String title,
+    IconData icon,
+    List<String> details,
+  ) {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.02),
-              blurRadius: 8,
-              offset: const Offset(0, 2),
-            ),
+          BoxShadow(
+            color: Colors.black.withOpacity(0.02),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
         ],
       ),
       child: Column(
@@ -334,20 +359,28 @@ class OrderDetailScreen extends StatelessWidget {
               const SizedBox(width: 8),
               Text(
                 title,
-                style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.grey),
+                style: const TextStyle(
+                  fontWeight: FontWeight.bold,
+                  color: Colors.grey,
+                ),
               ),
             ],
           ),
           const SizedBox(height: 12),
-          ...details.map((detail) => Padding(
-            padding: const EdgeInsets.only(bottom: 4),
-            child: Text(
-              detail,
-              style: const TextStyle(fontWeight: FontWeight.w500, fontSize: 13),
-              maxLines: 3,
-              overflow: TextOverflow.ellipsis,
+          ...details.map(
+            (detail) => Padding(
+              padding: const EdgeInsets.only(bottom: 4),
+              child: Text(
+                detail,
+                style: const TextStyle(
+                  fontWeight: FontWeight.w500,
+                  fontSize: 13,
+                ),
+                maxLines: 3,
+                overflow: TextOverflow.ellipsis,
+              ),
             ),
-          )),
+          ),
         ],
       ),
     );

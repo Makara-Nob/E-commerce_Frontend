@@ -2,7 +2,7 @@ class ApiConstants {
   // Base URL - Change this to your computer's IP address for physical device testing
   // For Android Emulator use: http://10.0.2.2:8888
   // For physical device use: http://YOUR_IP:8888 (e.g., http://192.168.1.100:8888)
-  static const String baseUrl = 'http://10.0.2.2:5000';
+  static const String baseUrl = 'https://ecommerce-backend-v8k1.onrender.com';
   
   // API Endpoints
   
@@ -16,6 +16,10 @@ class ApiConstants {
   static const String publicProducts = '/api/v1/public/products/all';
   static String publicProductById(int id) => '/api/v1/public/products/$id';
   static String relatedProducts(int id) => '/api/v1/public/products/$id/related';
+  static String popularProducts({int page = 1, int limit = 10}) =>
+      '/api/v1/public/products/popular?page=$page&limit=$limit';
+  static String latestProducts({int page = 1, int limit = 10}) =>
+      '/api/v1/public/products/latest?page=$page&limit=$limit';
   
   // Cart endpoints (auth required)
   static const String cart = '/api/v1/cart';
@@ -26,6 +30,7 @@ class ApiConstants {
   static const String orders = '/api/v1/orders';
   static const String myOrders = '/api/v1/orders/my-orders';
   static String orderById(int id) => '/api/v1/orders/$id';
+  static String checkPayment(int id) => '/api/v1/orders/$id/check-payment';
   
   // Banner endpoints (public)
   static const String publicBanners = '/api/v1/public/banners';

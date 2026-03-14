@@ -1,5 +1,5 @@
 class BrandModel {
-  final int id;
+  final String id;
   final String name;
   final String? logo;
   final String? description;
@@ -13,9 +13,9 @@ class BrandModel {
 
   factory BrandModel.fromJson(Map<String, dynamic> json) {
     return BrandModel(
-      id: json['id'] as int,
+      id: json['id']?.toString() ?? json['_id']?.toString() ?? '',
       name: json['name'] as String? ?? '',
-      logo: json['logo'] as String?, // Adjust based on actual DTO, checking BrandResponseDto would be safe but standard guessing for now
+      logo: json['logoUrl'] as String?,
       description: json['description'] as String?,
     );
   }

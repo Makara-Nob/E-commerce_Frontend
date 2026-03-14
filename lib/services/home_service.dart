@@ -30,22 +30,16 @@ class HomeService {
          debugPrint('📦 Banner Data Type: ${data.runtimeType}');
          
          if (data is List) {
-           debugPrint('🔢 Found ${data.length} banners in list');
            final banners = data.map((e) => BannerModel.fromJson(e)).toList();
-           return ApiResponse(
-             success: true, 
-             message: 'Banners loaded', 
-             data: banners
-           );
+           return ApiResponse(success: true, message: 'Banners loaded', data: banners);
          } else if (data is Map && data['data'] is List) {
-           // Fallback if ApiService DOESN'T unwrap
            final list = data['data'] as List;
            final banners = list.map((e) => BannerModel.fromJson(e)).toList();
            return ApiResponse(success: true, message: 'Banners loaded', data: banners);
          }
       }
-      
-      return ApiResponse(success: false, message: 'No banner data found');
+      debugPrint('❌ Failed to load banners: ${response.message} (Error: ${response.error})');
+      return ApiResponse(success: false, message: response.message);
     } catch (e) {
       debugPrint('❌ Error in getBanners: $e');
       return ApiResponse(success: false, message: e.toString());
@@ -62,6 +56,7 @@ class HomeService {
         fromJson: (json) => json, 
       );
 
+      debugPrint('📥 Promotions Response Success: ${response.success}');
       if (response.success && response.data != null) {
          final data = response.data;
          if (data is List) {
@@ -73,7 +68,8 @@ class HomeService {
              return ApiResponse(success: true, message: 'Promotions loaded', data: mapped);
          }
       }
-      return ApiResponse(success: false, message: 'No promotion data found');
+      debugPrint('❌ Failed to load promotions: ${response.message} (Error: ${response.error})');
+      return ApiResponse(success: false, message: response.message);
     } catch (e) {
       debugPrint('❌ Error in getPromotions: $e');
       return ApiResponse(success: false, message: e.toString());
@@ -110,15 +106,19 @@ class HomeService {
           fromJson: (json) => json as Map<String, dynamic>,
         );
 
+        debugPrint('📥 Brands Response Success: ${response.success}');
         if (response.success && response.data != null) {
             final list = response.data!['content'] ?? [];
             if (list is List) {
                 final brands = list.map((e) => BrandModel.fromJson(e)).toList();
                 return ApiResponse(success: true, message: 'Success', data: brands);
             }
+            debugPrint('⚠️ Brands content field is not a list: ${response.data}');
         }
-        return ApiResponse(success: false, message: 'Failed to parse brands');
+        debugPrint('❌ Failed to load brands: ${response.message} (Error: ${response.error})');
+        return ApiResponse(success: false, message: response.message);
     } catch (e) {
+        debugPrint('❌ Error in getBrands: $e');
         return ApiResponse(success: false, message: e.toString());
     }
   }
@@ -129,7 +129,6 @@ class HomeService {
       'pageNo': 1,
       'pageSize': 100,
       'search': '',
-      'status': 'ACTIVE'
     };
 
     try {
@@ -140,15 +139,19 @@ class HomeService {
           fromJson: (json) => json as Map<String, dynamic>,
         );
 
+        debugPrint('📥 Categories Response Success: ${response.success}');
         if (response.success && response.data != null) {
             final list = response.data!['content'] ?? [];
              if (list is List) {
                  final categories = list.map((e) => CategoryModel.fromJson(e)).toList();
                  return ApiResponse(success: true, message: 'Success', data: categories);
              }
+             debugPrint('⚠️ Categories content field is not a list: ${response.data}');
         }
-        return ApiResponse(success: false, message: 'Failed to parse categories');
+        debugPrint('❌ Failed to load categories: ${response.message} (Error: ${response.error})');
+        return ApiResponse(success: false, message: response.message);
     } catch (e) {
+        debugPrint('❌ Error in getCategories: $e');
         return ApiResponse(success: false, message: e.toString());
     }
   }

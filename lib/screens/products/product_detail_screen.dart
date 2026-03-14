@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
 import 'package:flutter_animate/flutter_animate.dart';
+import 'dart:async';
 import '../../models/product/product.dart';
 import '../../models/product/product_variant.dart';
 import '../../providers/cart_provider.dart';
@@ -11,6 +12,8 @@ import '../auth/login_screen.dart';
 import '../../widgets/product_card.dart';
 import '../../services/product_service.dart';
 import '../../models/api_response.dart';
+import '../../models/home/brand_model.dart';
+import 'brand_detail_screen.dart';
 
 class ProductDetailScreen extends StatefulWidget {
   final Product product;
@@ -25,21 +28,56 @@ class ProductDetailScreen extends StatefulWidget {
 class _ProductDetailScreenState extends State<ProductDetailScreen> {
   int _quantity = 1;
   ProductVariant? _selectedVariant;
+  int _currentImageIndex = 0;
+  late final PageController _pageController = PageController();
+  Timer? _autoPlayTimer;
+
+  /// Build an ordered list of images to show: put the selected variant's image first (if any),
+  /// then fall back to the product's images array, then imageUrl.
+  List<String> get _displayImages {
+    final variantImg = _selectedVariant?.imageUrl;
+    final base = widget.product.images.isNotEmpty
+        ? widget.product.images
+        : (widget.product.imageUrl != null ? [widget.product.imageUrl!] : <String>[]);
+    if (variantImg != null && !base.contains(variantImg)) {
+      return [variantImg, ...base];
+    }
+    return base.isNotEmpty ? base : (variantImg != null ? [variantImg] : []);
+  }
+
+  void _startAutoPlay() {
+    _autoPlayTimer?.cancel();
+    if (_displayImages.length <= 1) return;
+    _autoPlayTimer = Timer.periodic(const Duration(seconds: 4), (_) {
+      if (!mounted) return;
+      final next = (_currentImageIndex + 1) % _displayImages.length;
+      _pageController.animateToPage(
+        next,
+        duration: const Duration(milliseconds: 400),
+        curve: Curves.easeInOut,
+      );
+    });
+  }
 
   @override
   void initState() {
     super.initState();
-    // Pre-select variant if provided or auto-select first active variant
     if (widget.initialVariantId != null) {
       try {
         _selectedVariant = widget.product.variants.firstWhere((v) => v.id == widget.initialVariantId);
       } catch (e) {
         // Variant not found, ignore
       }
-    } else if (widget.product.variants.isNotEmpty) {
-       // Optional: Pre-select the first available variant
-       // _selectedVariant = widget.product.variants.firstWhere((v) => v.status == 'ACTIVE', orElse: () => widget.product.variants.first);
     }
+    // Start autoplay after first frame so _displayImages is ready
+    WidgetsBinding.instance.addPostFrameCallback((_) => _startAutoPlay());
+  }
+
+  @override
+  void dispose() {
+    _autoPlayTimer?.cancel();
+    _pageController.dispose();
+    super.dispose();
   }
 
   String _formatCurrency(double amount) {
@@ -69,7 +107,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
     return Scaffold(
       body: CustomScrollView(
         slivers: [
-          // Sliver App Bar with Hero Image
+          // Sliver App Bar with Image Carousel
           SliverAppBar(
             expandedHeight: 350,
             pinned: true,
@@ -79,24 +117,9 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
               background: Stack(
                 fit: StackFit.expand,
                 children: [
-                  // Product image
-                  Image.network(
-                    _selectedVariant?.imageUrl ?? widget.product.imageUrl ?? '',
-                    fit: BoxFit.cover,
-                    errorBuilder: (context, error, stackTrace) => Container(
-                      decoration: BoxDecoration(
-                        gradient: _getProductGradient(),
-                      ),
-                      child: Center(
-                        child: Icon(
-                          Icons.shopping_bag_outlined,
-                          size: 120,
-                          color: Colors.white.withOpacity(0.8),
-                        ).animate().scale(duration: 600.ms, curve: Curves.easeOutBack),
-                      ),
-                    ),
-                  ),
-                  // Gradient overlay for text readability at bottom
+                  // Image Carousel
+                  _buildImageCarousel(),
+                  // Gradient overlay
                   Positioned(
                     bottom: 0,
                     left: 0,
@@ -115,6 +138,29 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                       ),
                     ),
                   ),
+                  // Dot indicators
+                  if (_displayImages.length > 1)
+                    Positioned(
+                      bottom: 12,
+                      left: 0,
+                      right: 0,
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: _displayImages.asMap().entries.map((entry) {
+                          final isActive = entry.key == _currentImageIndex;
+                          return AnimatedContainer(
+                            duration: const Duration(milliseconds: 250),
+                            margin: const EdgeInsets.symmetric(horizontal: 3),
+                            width: isActive ? 18 : 6,
+                            height: 6,
+                            decoration: BoxDecoration(
+                              color: isActive ? Colors.white : Colors.white.withOpacity(0.4),
+                              borderRadius: BorderRadius.circular(4),
+                            ),
+                          );
+                        }).toList(),
+                      ),
+                    ),
                 ],
               ),
             ),
@@ -150,17 +196,63 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                     Row(
                       children: [
                         if (widget.product.brand != null)
-                          Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                            margin: const EdgeInsets.only(right: 8),
-                            decoration: BoxDecoration(
-                              color: theme.colorScheme.primaryContainer,
-                              borderRadius: BorderRadius.circular(20),
-                            ),
-                            child: Text(
-                              widget.product.brand!.name,
-                              style: theme.textTheme.labelMedium?.copyWith(
-                                color: theme.colorScheme.onPrimaryContainer,
+                          GestureDetector(
+                            onTap: () {
+                              final b = widget.product.brand!;
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (_) => BrandDetailScreen(
+                                    brand: BrandModel(
+                                      id: b.id,
+                                      name: b.name,
+                                      description: b.description,
+                                      logo: b.logoUrl,
+                                    ),
+                                  ),
+                                ),
+                              );
+                            },
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                              margin: const EdgeInsets.only(right: 8),
+                              decoration: BoxDecoration(
+                                color: theme.colorScheme.primaryContainer,
+                                borderRadius: BorderRadius.circular(20),
+                              ),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  // Brand logo
+                                  if (widget.product.brand!.logoUrl != null) ...[
+                                    ClipOval(
+                                      child: Image.network(
+                                        widget.product.brand!.logoUrl!,
+                                        width: 18,
+                                        height: 18,
+                                        fit: BoxFit.cover,
+                                        errorBuilder: (_, __, ___) => Icon(
+                                          Icons.store,
+                                          size: 14,
+                                          color: theme.colorScheme.onPrimaryContainer,
+                                        ),
+                                      ),
+                                    ),
+                                    const SizedBox(width: 6),
+                                  ],
+                                  Text(
+                                    widget.product.brand!.name,
+                                    style: theme.textTheme.labelMedium?.copyWith(
+                                      color: theme.colorScheme.onPrimaryContainer,
+                                    ),
+                                  ),
+                                  const SizedBox(width: 4),
+                                  Icon(
+                                    Icons.chevron_right_rounded,
+                                    size: 14,
+                                    color: theme.colorScheme.onPrimaryContainer,
+                                  ),
+                                ],
                               ),
                             ),
                           ),
@@ -294,7 +386,11 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                             onSelected: (bool selected) {
                               setState(() {
                                 _selectedVariant = selected ? variant : null;
+                                _currentImageIndex = 0;
                               });
+                              // Jump to first image to show variant image
+                              _pageController.jumpToPage(0);
+                              _startAutoPlay();
                             },
                           );
                         }).toList(),
@@ -567,6 +663,51 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
               ),
             )
           : null,
+    );
+  }
+  Widget _buildImageCarousel() {
+    final images = _displayImages;
+    if (images.isEmpty) {
+      return Container(
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            colors: [AppColors.primaryStart, AppColors.primaryEnd],
+          ),
+        ),
+        child: Center(
+          child: Icon(
+            Icons.shopping_bag_outlined,
+            size: 120,
+            color: Colors.white.withOpacity(0.8),
+          ).animate().scale(duration: 600.ms, curve: Curves.easeOutBack),
+        ),
+      );
+    }
+    return PageView.builder(
+      controller: _pageController,
+      itemCount: images.length,
+      onPageChanged: (index) => setState(() => _currentImageIndex = index),
+      itemBuilder: (context, index) {
+        return Image.network(
+          images[index],
+          fit: BoxFit.cover,
+          width: double.infinity,
+          errorBuilder: (_, __, ___) => Container(
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                colors: [AppColors.primaryStart, AppColors.primaryEnd],
+              ),
+            ),
+            child: Center(
+              child: Icon(
+                Icons.shopping_bag_outlined,
+                size: 120,
+                color: Colors.white.withOpacity(0.8),
+              ),
+            ),
+          ),
+        );
+      },
     );
   }
 }

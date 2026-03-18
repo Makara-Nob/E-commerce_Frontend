@@ -35,6 +35,7 @@ class ApiConstants {
   static const String myOrders = '/api/v1/orders/my-orders';
   static String orderById(int id) => '/api/v1/orders/$id';
   static String checkPayment(int id) => '/api/v1/orders/$id/check-payment';
+  static String paywayPayload(int id) => '/api/v1/orders/$id/payway-payload';
   
   // Banner endpoints (public)
   static const String publicBanners = '/api/v1/public/banners';

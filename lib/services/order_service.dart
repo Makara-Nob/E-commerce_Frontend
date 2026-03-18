@@ -66,4 +66,14 @@ class OrderService {
       fromJson: (json) => Order.fromJson(json['order']),
     );
   }
+
+  // Get PayWay payload for existing order
+  Future<ApiResponse<Map<String, dynamic>>> getPaywayPayload(int id, String paymentOption) async {
+    return await _apiService.post<Map<String, dynamic>>(
+      ApiConstants.paywayPayload(id),
+      body: {'paymentOption': paymentOption},
+      requiresAuth: true,
+      fromJson: (json) => json,
+    );
+  }
 }

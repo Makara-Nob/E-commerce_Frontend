@@ -140,6 +140,31 @@ class OrderProvider with ChangeNotifier {
     }
   }
 
+  // Get PayWay payload
+  Future<Map<String, dynamic>?> getPaywayPayload(int id, String paymentOption) async {
+    _isLoading = true;
+    _errorMessage = null;
+    notifyListeners();
+
+    try {
+      final response = await _orderService.getPaywayPayload(id, paymentOption);
+      _isLoading = false;
+      notifyListeners();
+
+      if (response.success && response.data != null) {
+        return response.data;
+      } else {
+        _errorMessage = response.message;
+        return null;
+      }
+    } catch (e) {
+      _errorMessage = 'Failed to get PayWay payload: $e';
+      _isLoading = false;
+      notifyListeners();
+      return null;
+    }
+  }
+
   // Clear current order
   void clearCurrentOrder() {
     _currentOrder = null;

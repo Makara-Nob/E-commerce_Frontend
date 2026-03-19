@@ -7,6 +7,7 @@ import 'order_success_screen.dart';
 import 'aba_webview_screen.dart';
 import 'aba_khqr_screen.dart';
 import 'package:flutter_svg/flutter_svg.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../../providers/order_provider.dart';
 import '../../theme/app_colors.dart';
 
@@ -36,10 +37,10 @@ class _AbaCheckoutScreenState extends State<AbaCheckoutScreen> {
     _amount = widget.paywayPayload['amount']?.toString();
   }
 
-  Future<void> _verifyPayment() async {
+  Future<void> _verifyPayment({bool silent = false}) async {
     if (_isCheckingPayment) return;
 
-    setState(() => _isCheckingPayment = true);
+    if (!silent) setState(() => _isCheckingPayment = true);
 
     try {
       final orderProvider = Provider.of<OrderProvider>(context, listen: false);
@@ -54,7 +55,7 @@ class _AbaCheckoutScreenState extends State<AbaCheckoutScreen> {
             MaterialPageRoute(builder: (_) => const OrderSuccessScreen()),
           );
           return;
-        } else {
+        } else if (!silent) {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
               content: Text('Payment is still pending. Please wait a moment or try again.'),
@@ -62,7 +63,7 @@ class _AbaCheckoutScreenState extends State<AbaCheckoutScreen> {
             ),
           );
         }
-      } else {
+      } else if (!silent) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(orderProvider.errorMessage ?? 'Could not verify payment status'),
@@ -71,7 +72,7 @@ class _AbaCheckoutScreenState extends State<AbaCheckoutScreen> {
         );
       }
     } catch (e) {
-      if (mounted) {
+      if (mounted && !silent) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('Error: $e'),
@@ -80,14 +81,18 @@ class _AbaCheckoutScreenState extends State<AbaCheckoutScreen> {
         );
       }
     } finally {
-      if (mounted) setState(() => _isCheckingPayment = false);
+      if (mounted && !silent) setState(() => _isCheckingPayment = false);
     }
   }
 
-  void _navigateToAbaCheckout(String method) async {
-    final String abaOption = method == 'khqr' ? 'abapay_khqr' : 'cards';
+  void _navigateToAbaCheckout(String abaOption, String methodName) async {
     final orderProvider = Provider.of<OrderProvider>(context, listen: false);
     
+    // DEBUG SNACK
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text('Starting $methodName flow (Option: $abaOption)...')),
+    );
+
     // 1. Fetch fresh payload from backend to get correct hash
     final result = await orderProvider.getPaywayPayload(widget.orderId, abaOption);
     
@@ -105,6 +110,7 @@ class _AbaCheckoutScreenState extends State<AbaCheckoutScreen> {
       );
 
       try {
+        print('POSTing to ABA: $paywayApiUrl with option: $abaOption');
         final response = await http.post(
           Uri.parse(paywayApiUrl),
           body: paywayPayload,
@@ -112,6 +118,9 @@ class _AbaCheckoutScreenState extends State<AbaCheckoutScreen> {
 
         if (!mounted) return;
         Navigator.pop(context); // Remove loading dialog
+
+        print('ABA Response Status: ${response.statusCode}');
+        print('ABA Response Headers: ${response.headers}');
 
         if (response.statusCode == 200) {
           final String body = response.body.trim();
@@ -123,29 +132,58 @@ class _AbaCheckoutScreenState extends State<AbaCheckoutScreen> {
             final jsonResponse = jsonDecode(body);
             
             if (jsonResponse['status']['code'] == '00') {
-              // Case 1: Response contains QR data (even if method was 'card')
-              if (jsonResponse.containsKey('qrImage')) {
+              final String? paymentUrl = jsonResponse['payment_link'] ?? 
+                                         jsonResponse['checkout_url'] ?? 
+                                         jsonResponse['url'] ??
+                                         jsonResponse['abapay_deeplink']; // ✅ Support specific deeplink field
+              
+              print('ABA Response for $abaOption:');
+              print(' - paymentUrl: $paymentUrl');
+              print(' - abapay_deeplink: ${jsonResponse['abapay_deeplink']}');
+              print(' - hasQrImage: ${jsonResponse.containsKey('qrImage')}');
+
+              // If user DID NOT choose KHQR explicitly, prioritize the web/app link
+              if (abaOption != 'abapay_khqr' && paymentUrl != null && paymentUrl.isNotEmpty) {
+                if (!paymentUrl.startsWith('http')) {
+                  print(' -> Launching Direct Deeplink: $paymentUrl');
+                  launchUrl(Uri.parse(paymentUrl), mode: LaunchMode.externalApplication);
+                  // Verify payment in background while user is in ABA app
+                  _verifyPayment(silent: true);
+                  return;
+                }
+                print(' -> Navigating to WebView/Deeplink (URL priority)');
+                _openWebView(null, null, methodName, initialUrl: paymentUrl);
+                return;
+              }
+
+              // Otherwise, if there is a QR image, show our custom QR screen
+              // BUT ONLY if the user actually requested KHQR
+              if (abaOption == 'abapay_khqr' && jsonResponse.containsKey('qrImage')) {
+                print(' -> Navigating to Custom QR Screen');
                 Navigator.of(context).push(
                   MaterialPageRoute(
                     builder: (_) => AbaKhqrScreen(
                       qrImage: jsonResponse['qrImage'],
                       qrString: jsonResponse['qrString'],
-                      amount: paywayPayload['amount'] ?? '0.00', // Handle null for COF
+                      amount: paywayPayload['amount'] ?? '0.00',
                       tranId: paywayPayload['tran_id'] ?? jsonResponse['status']['tran_id'] ?? 'N/A',
-                      onVerify: () => _verifyPayment(),
+                      onVerify: _verifyPayment,
                     ),
                   ),
                 );
                 return;
               }
               
-              // Case 2: Direct Payment Link (for Cards or other methods)
-              final String? paymentUrl = jsonResponse['payment_link'] ?? 
-                                         jsonResponse['checkout_url'] ?? 
-                                         jsonResponse['url'];
-              
+              // Fallback to URL if we are here (either no QR or it wasn't a KHQR request)
               if (paymentUrl != null && paymentUrl.isNotEmpty) {
-                _openWebView(null, null, method == 'khqr' ? 'ABA KHQR' : 'Credit/Debit Card', initialUrl: paymentUrl);
+                if (!paymentUrl.startsWith('http')) {
+                  print(' -> Launching Direct Deeplink (Fallback): $paymentUrl');
+                  launchUrl(Uri.parse(paymentUrl), mode: LaunchMode.externalApplication);
+                  _verifyPayment(silent: true);
+                  return;
+                }
+                print(' -> Navigating to WebView/Deeplink (Fallback)');
+                _openWebView(null, null, methodName, initialUrl: paymentUrl);
                 return;
               }
 
@@ -156,13 +194,13 @@ class _AbaCheckoutScreenState extends State<AbaCheckoutScreen> {
             }
           } else {
             // It's HTML, load it directly in WebView
-            _openWebView(null, null, method == 'khqr' ? 'ABA KHQR' : 'Credit/Debit Card', htmlContent: body);
+            _openWebView(null, null, methodName, htmlContent: body);
           }
         } else if (response.statusCode == 302 || response.statusCode == 301 || response.statusCode == 307 || response.statusCode == 308) {
           // Handle redirect manually (common for COF point to card entry page)
           final String? location = response.headers['location'];
           if (location != null && location.isNotEmpty) {
-            _openWebView(null, null, method == 'khqr' ? 'ABA KHQR' : 'Credit/Debit Card', initialUrl: location);
+            _openWebView(null, null, methodName, initialUrl: location);
           } else {
             throw Exception('Redirect received (code ${response.statusCode}) but no Location header found.');
           }
@@ -264,7 +302,14 @@ class _AbaCheckoutScreenState extends State<AbaCheckoutScreen> {
                   title: 'ABA KHQR',
                   subtitle: 'Scan to pay with any banking app',
                   svgAsset: 'assets/images/payment/ABA_BANK_khqr.svg',
-                  onTap: () => _navigateToAbaCheckout('khqr'),
+                  onTap: () => _navigateToAbaCheckout('abapay_khqr', 'ABA KHQR'),
+                ),
+                const SizedBox(height: 12),
+                _buildPaymentMethodTile(
+                  title: 'ABA Mobile App',
+                  subtitle: 'Open ABA app to pay instantly',
+                  svgAsset: 'assets/images/payment/ABA_BANK_khqr.svg',
+                  onTap: () => _navigateToAbaCheckout('abapay_deeplink', 'ABA Mobile App'),
                 ),
                 const SizedBox(height: 12),
                 _buildPaymentMethodTile(
@@ -278,7 +323,7 @@ class _AbaCheckoutScreenState extends State<AbaCheckoutScreen> {
                     ),
                   ),
                   svgAsset: 'assets/images/payment/cards_icons.svg',
-                  onTap: () => _navigateToAbaCheckout('card'),
+                  onTap: () => _navigateToAbaCheckout('cards', 'Credit/Debit Card'),
                 ),
                 const SizedBox(height: 48),
                 _buildPaymentConfirmButton(),

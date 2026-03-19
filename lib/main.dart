@@ -1,3 +1,4 @@
+import 'package:e_commerce/screens/orders/aba_khqr_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'providers/auth_provider.dart';
@@ -71,7 +72,15 @@ class _AppInitializerState extends State<AppInitializer> {
 
   @override
   Widget build(BuildContext context) {
-    // Always show home screen (guest mode enabled)
-    return const HomeScreen();
+    return HomeScreen();
+    // return AbaKhqrScreen(
+    //   qrImage: "",
+    //   qrString: "",
+    //   amount: "100.00",
+    //   tranId: "724",
+    //   onVerify: ({bool silent = false}) async {
+    //     // TODO: your verification logic here
+    //   },
+    // );
   }
 }

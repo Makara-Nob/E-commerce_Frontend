@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:webview_flutter/webview_flutter.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../../theme/app_colors.dart';
 
 class AbaWebViewScreen extends StatefulWidget {
@@ -37,7 +38,7 @@ class _AbaWebViewScreenState extends State<AbaWebViewScreen> {
         NavigationDelegate(
           onPageStarted: (url) => setState(() => _isLoading = true),
           onPageFinished: (url) => setState(() => _isLoading = false),
-          onNavigationRequest: (request) {
+          onNavigationRequest: (request) async {
             final url = request.url;
             final returnUrl = widget.paywayPayload?['return_url'] as String?;
             final successUrl = widget.paywayPayload?['continue_success_url'] as String?;
@@ -49,6 +50,19 @@ class _AbaWebViewScreenState extends State<AbaWebViewScreen> {
               Navigator.of(context).pop();
               return NavigationDecision.prevent;
             }
+
+            // Handle custom schemes (e.g., abamobilebank://, abapay://, intent://)
+            if (!url.startsWith('http://') && !url.startsWith('https://')) {
+              try {
+                final Uri uri = Uri.parse(url);
+                launchUrl(uri, mode: LaunchMode.externalApplication);
+              } catch (e) {
+                debugPrint('Could not launch custom scheme: $e');
+              }
+              // Always prevent the WebView from trying to load custom schemes
+              return NavigationDecision.prevent;
+            }
+
             return NavigationDecision.navigate;
           },
         ),

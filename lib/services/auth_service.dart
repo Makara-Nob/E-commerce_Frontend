@@ -1,6 +1,7 @@
 import 'dart:io';
 import '../models/api_response.dart';
 import '../models/auth/login_request.dart';
+import '../models/auth/register_request.dart';
 import '../models/auth/auth_response.dart';
 import '../constants/api_constants.dart';
 import 'api_service.dart';
@@ -35,6 +36,45 @@ class AuthService {
     }
 
     return response;
+  }
+
+  // Register
+  Future<ApiResponse<dynamic>> register(RegisterRequest request) async {
+    final response = await _apiService.post(
+      ApiConstants.register,
+      body: request.toJson(),
+      requiresAuth: false,
+      fromJson: (json) => json,
+    );
+    return response;
+  }
+
+  // Verify OTP
+  Future<ApiResponse<AuthResponse>> verifyOtp(String email, String otp) async {
+    final response = await _apiService.post<AuthResponse>(
+      ApiConstants.verifyOtp,
+      body: {'email': email, 'otp': otp},
+      requiresAuth: false,
+      fromJson: (json) => AuthResponse.fromJson(json),
+    );
+
+    if (response.success && response.data != null) {
+      final token = response.data!.token;
+      await _storageService.saveToken(token);
+      await _storageService.saveUser(response.data!.user);
+    }
+
+    return response;
+  }
+
+  // Resend OTP
+  Future<ApiResponse<dynamic>> resendOtp(String email) async {
+    return await _apiService.post(
+      ApiConstants.resendOtp,
+      body: {'email': email},
+      requiresAuth: false,
+      fromJson: (json) => json,
+    );
   }
 
   // Validate token

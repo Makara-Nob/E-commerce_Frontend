@@ -21,17 +21,9 @@ class HomeScreen extends StatefulWidget {
 class _HomeScreenState extends State<HomeScreen> {
   int _selectedIndex = 0;
 
-  final List<Widget> _screens = [
-    const ProductListScreen(),
-    const CartScreen(),
-    const OrderListScreen(),
-    const ProfileScreen(),
-  ];
-
   @override
   void initState() {
     super.initState();
-    // Load initial data
     WidgetsBinding.instance.addPostFrameCallback((_) {
       try {
         Provider.of<ProductProvider>(context, listen: false).loadProducts();
@@ -41,24 +33,47 @@ class _HomeScreenState extends State<HomeScreen> {
     });
   }
 
-  void _onTabTapped(int index) {
-    setState(() {
-      _selectedIndex = index;
-    });
-  }
-
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      body: IndexedStack(
-        index: _selectedIndex,
-        children: _screens,
-      ),
-      bottomNavigationBar: Consumer<CartProvider>(
-        builder: (context, cartProvider, child) {
-          final cartItemCount = cartProvider.cart?.items.length ?? 0;
-          
-          return Container(
+    return Consumer<AuthProvider>(
+      builder: (context, authProvider, _) {
+        final isLoggedIn = authProvider.isAuthenticated;
+
+        // Build screens & nav items based on auth state
+        final screens = [
+          const ProductListScreen(),
+          if (isLoggedIn) const OrderListScreen(),
+          const ProfileScreen(),
+        ];
+
+        final navItems = [
+          const BottomNavigationBarItem(
+            icon: Icon(Icons.store_outlined),
+            activeIcon: Icon(Icons.store),
+            label: 'Products',
+          ),
+          if (isLoggedIn)
+            const BottomNavigationBarItem(
+              icon: Icon(Icons.receipt_long_outlined),
+              activeIcon: Icon(Icons.receipt_long),
+              label: 'Orders',
+            ),
+          const BottomNavigationBarItem(
+            icon: Icon(Icons.person_outline),
+            activeIcon: Icon(Icons.person),
+            label: 'Profile',
+          ),
+        ];
+
+        // If selected index is out of range (e.g. user logs out while on Orders), reset
+        final safeIndex = _selectedIndex.clamp(0, screens.length - 1);
+
+        return Scaffold(
+          body: IndexedStack(
+            index: safeIndex,
+            children: screens,
+          ),
+          bottomNavigationBar: Container(
             decoration: BoxDecoration(
               boxShadow: [
                 BoxShadow(
@@ -70,45 +85,15 @@ class _HomeScreenState extends State<HomeScreen> {
             ),
             child: BottomNavigationBar(
               type: BottomNavigationBarType.fixed,
-              currentIndex: _selectedIndex,
-              onTap: _onTabTapped,
+              currentIndex: safeIndex,
+              onTap: (index) => setState(() => _selectedIndex = index),
               selectedFontSize: 12,
               unselectedFontSize: 12,
-              items: [
-                const BottomNavigationBarItem(
-                  icon: Icon(Icons.store_outlined),
-                  activeIcon: Icon(Icons.store),
-                  label: 'Products',
-                ),
-                BottomNavigationBarItem(
-                  icon: Badge(
-                    label: cartItemCount > 0 ? Text('$cartItemCount') : null,
-                    isLabelVisible: cartItemCount > 0,
-                    child: const Icon(Icons.shopping_cart_outlined),
-                  ),
-                  activeIcon: Badge(
-                    label: cartItemCount > 0 ? Text('$cartItemCount') : null,
-                    isLabelVisible: cartItemCount > 0,
-                    child: const Icon(Icons.shopping_cart),
-                  ),
-                  label: 'Cart',
-                ),
-                const BottomNavigationBarItem(
-                  icon: Icon(Icons.receipt_long_outlined),
-                  activeIcon: Icon(Icons.receipt_long),
-                  label: 'Orders',
-                ),
-                const BottomNavigationBarItem(
-                  icon: Icon(Icons.person_outline),
-                  activeIcon: Icon(Icons.person),
-                  label: 'Profile',
-                ),
-              ],
+              items: navItems,
             ),
-          );
-        },
-      ),
+          ),
+        );
+      },
     );
   }
 }
-

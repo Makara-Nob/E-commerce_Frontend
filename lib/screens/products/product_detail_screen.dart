@@ -15,6 +15,7 @@ import '../../models/api_response.dart';
 import '../../models/home/brand_model.dart';
 import 'brand_detail_screen.dart';
 import '../../providers/home_provider.dart';
+import '../../providers/wishlist_provider.dart';
 import '../../models/home/promotion_model.dart';
 
 class ProductDetailScreen extends StatefulWidget {
@@ -33,6 +34,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
   int _currentImageIndex = 0;
   late final PageController _pageController = PageController();
   Timer? _autoPlayTimer;
+  late Future<ApiResponse<List<Product>>> _relatedProductsFuture;
 
   /// Build an ordered list of images to show: put the selected variant's image first (if any),
   /// then fall back to the product's images array, then imageUrl.
@@ -64,6 +66,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
   @override
   void initState() {
     super.initState();
+    _relatedProductsFuture = ProductService().getRelatedProducts(widget.product.id);
     if (widget.initialVariantId != null) {
       try {
         _selectedVariant = widget.product.variants.firstWhere((v) => v.id == widget.initialVariantId);
@@ -120,6 +123,21 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
             pinned: true,
             iconTheme: const IconThemeData(color: Colors.white),
             backgroundColor: AppColors.primaryStart,
+            actions: [
+              Consumer<WishlistProvider>(
+                builder: (context, wishlist, _) {
+                  final isFavorite = wishlist.isExist(widget.product.id);
+                  return IconButton(
+                    icon: Icon(
+                      isFavorite ? Icons.favorite : Icons.favorite_border,
+                      color: isFavorite ? Colors.red : Colors.white,
+                    ),
+                    onPressed: () => wishlist.toggleWishlist(widget.product),
+                  );
+                },
+              ),
+              const SizedBox(width: 8),
+            ],
             flexibleSpace: FlexibleSpaceBar(
               background: Stack(
                 fit: StackFit.expand,
@@ -484,7 +502,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
 
                     // Related Products
                     FutureBuilder<ApiResponse<List<Product>>>(
-                      future: ProductService().getRelatedProducts(widget.product.id),
+                      future: _relatedProductsFuture,
                       builder: (context, snapshot) {
                         if (snapshot.connectionState == ConnectionState.waiting) {
                           return const Center(child: CircularProgressIndicator());

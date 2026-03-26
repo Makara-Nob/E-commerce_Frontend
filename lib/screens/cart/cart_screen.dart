@@ -8,9 +8,33 @@ import '../../widgets/empty_state.dart';
 import '../home/home_screen.dart';
 import '../orders/checkout_screen.dart';
 import '../products/product_detail_screen.dart';
+import '../../widgets/global_draggable_cart.dart';
 
-class CartScreen extends StatelessWidget {
+class CartScreen extends StatefulWidget {
   const CartScreen({super.key});
+
+  @override
+  State<CartScreen> createState() => _CartScreenState();
+}
+
+class _CartScreenState extends State<CartScreen> {
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      hideGlobalCart.value = true;
+    });
+  }
+
+  @override
+  void dispose() {
+    // Defer the ValueNotifier update — setting it synchronously during dispose
+    // fires while the widget tree is locked, causing a framework assertion.
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      hideGlobalCart.value = false;
+    });
+    super.dispose();
+  }
 
   String _formatCurrency(double amount) {
     final formatter = NumberFormat.currency(symbol: '\$', decimalDigits: 2);

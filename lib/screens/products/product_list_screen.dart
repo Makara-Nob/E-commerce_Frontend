@@ -6,7 +6,6 @@ import '../../providers/home_provider.dart';
 import '../../models/home/promotion_model.dart';
 import '../../models/product/product.dart';
 import '../../services/product_service.dart';
-import '../../models/product/product_list_response.dart';
 import '../../widgets/product_card.dart';
 import '../../widgets/shimmer_loading.dart';
 import '../../widgets/gradient_background.dart';
@@ -18,6 +17,7 @@ import 'new_arrivals_screen.dart';
 import 'promotion_list_screen.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'all_categories_screen.dart';
+import '../profile/wishlist_screen.dart';
 
 class ProductListScreen extends StatefulWidget {
   const ProductListScreen({super.key});
@@ -110,7 +110,6 @@ class _ProductListScreenState extends State<ProductListScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
     return Scaffold(
       body: Column(
         children: [
@@ -123,21 +122,45 @@ class _ProductListScreenState extends State<ProductListScreen> {
                 child: Row(
                   children: [
                     if (!_isSearching) ...[
-                      const Icon(Icons.storefront_outlined, color: Colors.white, size: 26),
-                      const SizedBox(width: 10),
-                      const Text(
-                        'Shop',
-                        style: TextStyle(color: Colors.white, fontSize: 24, fontWeight: FontWeight.bold),
+                      // Compact inline logo
+                      Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Container(
+                            width: 34,
+                            height: 34,
+                            decoration: BoxDecoration(
+                              border: Border.all(color: Colors.white, width: 1.5),
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            child: const Center(
+                              child: Text('M', style: TextStyle(fontFamily: 'serif', fontSize: 22, color: Colors.white, height: 1)),
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          const Column(
+                            mainAxisSize: MainAxisSize.min,
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text('MAKARA', style: TextStyle(color: Colors.white, fontSize: 14, letterSpacing: 3, fontWeight: FontWeight.w600)),
+                              Text('SHOP', style: TextStyle(color: Color(0xFFC6A664), fontSize: 9, letterSpacing: 4, fontWeight: FontWeight.w500)),
+                            ],
+                          ),
+                        ],
                       ),
                       const Spacer(),
                       IconButton(
-                        onPressed: _startSearch,
-                        icon: const Icon(Icons.search, color: Colors.white),
+                        onPressed: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(builder: (_) => const WishlistScreen()),
+                          );
+                        },
+                        icon: const Icon(Icons.favorite_border, color: Colors.white),
                       ),
                       IconButton(
-                        onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const AllProductsScreen())),
-                        icon: const Icon(Icons.grid_view_rounded, color: Colors.white),
-                        tooltip: 'All Products',
+                        onPressed: _startSearch,
+                        icon: const Icon(Icons.search, color: Colors.white),
                       ),
                     ] else ...[
                       Expanded(
@@ -200,8 +223,9 @@ class _ProductListScreenState extends State<ProductListScreen> {
                     Consumer<HomeProvider>(
                       builder: (context, homeProvider, _) {
                         if (homeProvider.banners.isEmpty) return const SizedBox.shrink();
+                        final bannerHeight = MediaQuery.of(context).size.height * 0.5;
                         return SizedBox(
-                          height: 180,
+                          height: bannerHeight,
                           child: PageView.builder(
                             itemCount: homeProvider.banners.length,
                             itemBuilder: (context, index) {
@@ -251,7 +275,7 @@ class _ProductListScreenState extends State<ProductListScreen> {
                               onShowMore: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const AllCategoriesScreen())),
                             ),
                             SizedBox(
-                              height: 100,
+                              height: 170,
                               child: ListView.separated(
                                 padding: const EdgeInsets.symmetric(horizontal: 16),
                                 scrollDirection: Axis.horizontal,
@@ -259,10 +283,9 @@ class _ProductListScreenState extends State<ProductListScreen> {
                                 separatorBuilder: (_, __) => const SizedBox(width: 12),
                                 itemBuilder: (context, index) {
                                   final cat = homeProvider.categories[index];
-                                  return _IconicItem(
+                                  return _LargeCategoryCard(
                                     title: cat.name,
                                     imageUrl: cat.icon,
-                                    fallbackIcon: Icons.category_rounded,
                                     onTap: () {
                                       final provider = Provider.of<ProductProvider>(context, listen: false);
                                       provider.filterByCategory(cat.id);
@@ -461,18 +484,16 @@ class _SectionHeader extends StatelessWidget {
   }
 }
 
-// ── Iconic Item Widget (For Categories & Brands) ────────────────────────────
-class _IconicItem extends StatelessWidget {
+// ── Large Category Card Widget ──────────────────────────────────────────────
+class _LargeCategoryCard extends StatelessWidget {
   final String title;
   final String? imageUrl;
-  final IconData fallbackIcon;
   final VoidCallback onTap;
   final int index;
 
-  const _IconicItem({
+  const _LargeCategoryCard({
     required this.title,
     this.imageUrl,
-    required this.fallbackIcon,
     required this.onTap,
     required this.index,
   });
@@ -481,51 +502,51 @@ class _IconicItem extends StatelessWidget {
   Widget build(BuildContext context) {
     return GestureDetector(
       onTap: onTap,
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Container(
-            width: 62,
-            height: 62,
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(16),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withOpacity(0.05),
-                  blurRadius: 10,
-                  offset: const Offset(0, 4),
-                ),
-              ],
-              border: Border.all(color: Colors.grey[100]!, width: 1),
+      child: Container(
+        width: 130, // Much larger width
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(16),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.05),
+              blurRadius: 10,
+              offset: const Offset(0, 4),
             ),
-            child: ClipRRect(
-              borderRadius: BorderRadius.circular(16),
-              child: imageUrl != null && imageUrl!.isNotEmpty
-                  ? Image.network(
-                      imageUrl!,
-                      fit: BoxFit.cover,
-                      errorBuilder: (_, __, ___) => Icon(fallbackIcon, color: AppColors.primaryStart, size: 26),
-                    )
-                  : Icon(fallbackIcon, color: AppColors.primaryStart, size: 26),
-            ),
-          ),
-          const SizedBox(height: 8),
-          SizedBox(
-            width: 70,
-            child: Text(
-              title,
-              textAlign: TextAlign.center,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: const TextStyle(
-                fontSize: 11,
-                fontWeight: FontWeight.w600,
-                color: Colors.black87,
+          ],
+          border: Border.all(color: Colors.grey[100]!, width: 1),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Expanded(
+              child: ClipRRect(
+                borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
+                child: imageUrl != null && imageUrl!.isNotEmpty
+                    ? Image.network(
+                        imageUrl!,
+                        fit: BoxFit.cover,
+                        errorBuilder: (_, __, ___) => Icon(Icons.category, color: AppColors.primaryStart, size: 40),
+                      )
+                    : Icon(Icons.category, color: AppColors.primaryStart, size: 40),
               ),
             ),
-          ),
-        ],
+            Padding(
+              padding: const EdgeInsets.all(12.0),
+              child: Text(
+                title,
+                textAlign: TextAlign.center,
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+                style: const TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w600,
+                  color: Colors.black87,
+                ),
+              ),
+            ),
+          ],
+        ),
       ),
     ).animate().fadeIn(delay: (index * 60).ms).slideX(begin: 0.1);
   }

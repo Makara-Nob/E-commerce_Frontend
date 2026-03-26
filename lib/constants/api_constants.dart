@@ -2,7 +2,8 @@ class ApiConstants {
   // Base URL - Change this to your computer's IP address for physical device testing
   // For Android Emulator use: http://10.0.2.2:8888
   // For physical device use: http://YOUR_IP:8888 (e.g., http://192.168.1.100:8888)
-  static const String baseUrl = 'https://ecommerce-backend-v8k1.onrender.com';
+  // static const String baseUrl = 'https://ecommerce-backend-v8k1.onrender.com';
+  static const String baseUrl = 'http://10.0.2.2:5000';
 
   //api request time config
   static const Duration requestTimeout = Duration(seconds: 30);
@@ -12,6 +13,9 @@ class ApiConstants {
   
   // Auth endpoints
   static const String login = '/api/v1/auth/login';
+  static const String register = '/api/v1/auth/register';
+  static const String verifyOtp = '/api/v1/auth/verify-otp';
+  static const String resendOtp = '/api/v1/auth/resend-otp';
   static const String validateToken = '/api/v1/auth/validate-token';
   static const String getProfile = '/api/v1/auth/me';
   static const String updateProfile = '/api/v1/auth/token/update-profile';
@@ -33,9 +37,15 @@ class ApiConstants {
   // Order endpoints (auth required)
   static const String orders = '/api/v1/orders';
   static const String myOrders = '/api/v1/orders/my-orders';
+  static const String linkCard = '/api/v1/orders/link-card';
   static String orderById(int id) => '/api/v1/orders/$id';
   static String checkPayment(int id) => '/api/v1/orders/$id/check-payment';
   static String paywayPayload(int id) => '/api/v1/orders/$id/payway-payload';
+  static String payByToken(int id) => '/api/v1/orders/$id/pay-by-token';
+
+  // Saved cards endpoints
+  static const String savedCards = '/api/v1/users/saved-cards';
+  static String deleteCard(int index) => '/api/v1/users/saved-cards/$index';
   
   // Banner endpoints (public)
   static const String publicBanners = '/api/v1/public/banners';

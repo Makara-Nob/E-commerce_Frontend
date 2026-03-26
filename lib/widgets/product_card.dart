@@ -5,6 +5,7 @@ import 'package:provider/provider.dart';
 import '../models/product/product.dart';
 import '../theme/app_colors.dart';
 import '../providers/home_provider.dart';
+import '../providers/wishlist_provider.dart';
 import '../models/home/promotion_model.dart';
 
 class ProductCard extends StatelessWidget {
@@ -150,6 +151,39 @@ class ProductCard extends StatelessWidget {
                             ),
                           ),
                         ),
+
+                      // Wishlist Heart Icon (bottom-right of image)
+                      Positioned(
+                        bottom: 8,
+                        right: 8,
+                        child: Consumer<WishlistProvider>(
+                          builder: (context, wishlist, _) {
+                            final isFavorite = wishlist.isExist(product.id);
+                            return GestureDetector(
+                              onTap: () => wishlist.toggleWishlist(product),
+                              child: Container(
+                                padding: const EdgeInsets.all(6),
+                                decoration: BoxDecoration(
+                                  color: Colors.white.withOpacity(0.9),
+                                  shape: BoxShape.circle,
+                                  boxShadow: [
+                                    BoxShadow(
+                                      color: Colors.black.withOpacity(0.1),
+                                      blurRadius: 4,
+                                      offset: const Offset(0, 2),
+                                    ),
+                                  ],
+                                ),
+                                child: Icon(
+                                  isFavorite ? Icons.favorite : Icons.favorite_border,
+                                  color: isFavorite ? Colors.red : Colors.grey,
+                                  size: 18,
+                                ),
+                              ),
+                            );
+                          },
+                        ),
+                      ),
                     ],
                   ),
                 ),

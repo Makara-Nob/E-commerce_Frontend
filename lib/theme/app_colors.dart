@@ -2,9 +2,9 @@ import 'package:flutter/material.dart';
 
 /// App color palette with vibrant, modern colors
 class AppColors {
-  // Primary gradient colors (Cyber Mint & Slate)
-  static const primaryStart = Color(0xFF00D2FF); // Vivid Cyan/Mint
-  static const primaryEnd = Color(0xFF3A7BD5); // Deep Slate Blue
+  // Primary gradient colors (Charcoal Silver - Makara Brand)
+  static const primaryStart = Color(0xFF2C2C2C); // Deep charcoal (like the logo M box)
+  static const primaryEnd = Color(0xFF5A5A5A);   // Warm silver
 
   // Accent colors
   static const accentPink = Color(0xFFFF6B6B);
@@ -58,6 +58,9 @@ class AppColors {
     begin: Alignment.topLeft,
     end: Alignment.bottomRight,
   );
+
+  // Gold accent from the Makara logo bag
+  static const gold = Color(0xFFC6A664);
 
   static const accentGradient = LinearGradient(
     colors: [accentPink, accentOrange],

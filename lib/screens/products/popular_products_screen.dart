@@ -8,6 +8,7 @@ import '../../widgets/shimmer_loading.dart';
 import '../../widgets/gradient_background.dart';
 import '../../theme/app_colors.dart';
 import 'product_detail_screen.dart';
+import '../profile/wishlist_screen.dart';
 
 class PopularProductsScreen extends StatefulWidget {
   const PopularProductsScreen({super.key});
@@ -96,6 +97,16 @@ class _PopularProductsScreenState extends State<PopularProductsScreen> {
                         fontSize: 22,
                         fontWeight: FontWeight.bold,
                       ),
+                    ),
+                    const Spacer(),
+                    IconButton(
+                      icon: const Icon(Icons.favorite_border, color: Colors.white),
+                      onPressed: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(builder: (_) => const WishlistScreen()),
+                        );
+                      },
                     ),
                   ],
                 ),

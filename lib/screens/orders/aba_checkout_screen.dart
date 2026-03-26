@@ -10,6 +10,9 @@ import 'package:flutter_svg/flutter_svg.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../../providers/order_provider.dart';
 import '../../theme/app_colors.dart';
+import '../../services/card_service.dart';
+import '../../models/payment/saved_card.dart';
+import '../profile/saved_cards_screen.dart';
 
 class AbaCheckoutScreen extends StatefulWidget {
   final int orderId;
@@ -27,14 +30,47 @@ class AbaCheckoutScreen extends StatefulWidget {
   State<AbaCheckoutScreen> createState() => _AbaCheckoutScreenState();
 }
 
-class _AbaCheckoutScreenState extends State<AbaCheckoutScreen> {
+class _AbaCheckoutScreenState extends State<AbaCheckoutScreen> with WidgetsBindingObserver {
   bool _isCheckingPayment = false;
+  bool _isWaitingForReturn = false;
+  bool _isPayingByToken = false;
   String? _amount;
+  List<SavedCard> _savedCards = [];
+  final _cardService = CardService();
 
   @override
   void initState() {
     super.initState();
     _amount = widget.paywayPayload['amount']?.toString();
+    WidgetsBinding.instance.addObserver(this);
+    _loadSavedCards();
+  }
+
+  Future<void> _loadSavedCards() async {
+    try {
+      final cards = await _cardService.getSavedCards();
+      if (mounted) setState(() => _savedCards = cards);
+    } catch (e) {
+      debugPrint('Error loading saved cards: $e');
+    }
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    // When user returns from ABA app, auto-verify payment
+    if (state == AppLifecycleState.resumed && _isWaitingForReturn) {
+      _isWaitingForReturn = false;
+      // Small delay to let ABA backend process the payment
+      Future.delayed(const Duration(seconds: 2), () {
+        if (mounted) _verifyPayment();
+      });
+    }
   }
 
   Future<void> _verifyPayment({bool silent = false}) async {
@@ -146,9 +182,31 @@ class _AbaCheckoutScreenState extends State<AbaCheckoutScreen> {
               if (abaOption != 'abapay_khqr' && paymentUrl != null && paymentUrl.isNotEmpty) {
                 if (!paymentUrl.startsWith('http')) {
                   print(' -> Launching Direct Deeplink: $paymentUrl');
-                  launchUrl(Uri.parse(paymentUrl), mode: LaunchMode.externalApplication);
-                  // Verify payment in background while user is in ABA app
-                  _verifyPayment(silent: true);
+                  try {
+                    bool launched = await launchUrl(Uri.parse(paymentUrl), mode: LaunchMode.externalApplication);
+                    if (!launched) {
+                      throw Exception('Could not launch the ABA Mobile app. Is it installed?');
+                    }
+                    // Mark that we're waiting for user to return from ABA app
+                    setState(() => _isWaitingForReturn = true);
+                    if (mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text('Complete payment in ABA app, then return here.'),
+                          duration: Duration(seconds: 5),
+                        ),
+                      );
+                    }
+                  } catch (e) {
+                    if (mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text('Could not open ABA Mobile app. Please ensure it is installed.'),
+                          backgroundColor: AppColors.errorLight,
+                        ),
+                      );
+                    }
+                  }
                   return;
                 }
                 print(' -> Navigating to WebView/Deeplink (URL priority)');
@@ -178,8 +236,31 @@ class _AbaCheckoutScreenState extends State<AbaCheckoutScreen> {
               if (paymentUrl != null && paymentUrl.isNotEmpty) {
                 if (!paymentUrl.startsWith('http')) {
                   print(' -> Launching Direct Deeplink (Fallback): $paymentUrl');
-                  launchUrl(Uri.parse(paymentUrl), mode: LaunchMode.externalApplication);
-                  _verifyPayment(silent: true);
+                  try {
+                    bool launched = await launchUrl(Uri.parse(paymentUrl), mode: LaunchMode.externalApplication);
+                    if (!launched) {
+                      throw Exception('Could not launch the ABA Mobile app. Is it installed?');
+                    }
+                    // Mark that we're waiting for user to return from ABA app
+                    setState(() => _isWaitingForReturn = true);
+                    if (mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text('Complete payment in ABA app, then return here.'),
+                          duration: Duration(seconds: 5),
+                        ),
+                      );
+                    }
+                  } catch (e) {
+                    if (mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text('Could not open ABA Mobile app. Please ensure it is installed.'),
+                          backgroundColor: AppColors.errorLight,
+                        ),
+                      );
+                    }
+                  }
                   return;
                 }
                 print(' -> Navigating to WebView/Deeplink (Fallback)');
@@ -283,52 +364,82 @@ class _AbaCheckoutScreenState extends State<AbaCheckoutScreen> {
               onPressed: () => Navigator.of(context).pop(),
             ),
           ),
-          body: SingleChildScrollView(
-            padding: const EdgeInsets.all(24),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                _buildOrderSummary(theme),
-                const SizedBox(height: 32),
-                Text(
-                  'Choose way to pay',
-                  style: theme.textTheme.titleMedium?.copyWith(
-                    fontWeight: FontWeight.bold,
-                    color: AppColors.textPrimaryLight,
+          body: Column(
+            children: [
+              // Waiting banner shown while user is in ABA app
+              if (_isWaitingForReturn)
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+                  color: const Color(0xFFC6A664).withOpacity(0.15),
+                  child: const Row(
+                    children: [
+                      SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2, color: Color(0xFFC6A664))),
+                      SizedBox(width: 12),
+                      Expanded(
+                        child: Text(
+                          'Waiting for ABA payment… Return here after completing.',
+                          style: TextStyle(fontSize: 13, color: Color(0xFF8B6914), fontWeight: FontWeight.w500),
+                        ),
+                      ),
+                    ],
                   ),
-                ).animate().fadeIn(delay: 100.ms).slideX(begin: -0.1),
-                const SizedBox(height: 16),
-                _buildPaymentMethodTile(
-                  title: 'ABA KHQR',
-                  subtitle: 'Scan to pay with any banking app',
-                  svgAsset: 'assets/images/payment/ABA_BANK_khqr.svg',
-                  onTap: () => _navigateToAbaCheckout('abapay_khqr', 'ABA KHQR'),
                 ),
-                const SizedBox(height: 12),
-                _buildPaymentMethodTile(
-                  title: 'ABA Mobile App',
-                  subtitle: 'Open ABA app to pay instantly',
-                  svgAsset: 'assets/images/payment/ABA_BANK_khqr.svg',
-                  onTap: () => _navigateToAbaCheckout('abapay_deeplink', 'ABA Mobile App'),
-                ),
-                const SizedBox(height: 12),
-                _buildPaymentMethodTile(
-                  title: 'Credit/Debit Card',
-                  subtitleWidget: Padding(
-                    padding: const EdgeInsets.only(top: 4),
-                    child: SvgPicture.asset(
-                      'assets/images/payment/aba_card_group.svg',
-                      height: 18,
-                      alignment: Alignment.centerLeft,
-                    ),
+              Expanded(
+                child: SingleChildScrollView(
+                  padding: const EdgeInsets.all(24),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      _buildOrderSummary(theme),
+                      const SizedBox(height: 32),
+                      Text(
+                        'Choose way to pay',
+                        style: theme.textTheme.titleMedium?.copyWith(
+                          fontWeight: FontWeight.bold,
+                          color: AppColors.textPrimaryLight,
+                        ),
+                      ).animate().fadeIn(delay: 100.ms).slideX(begin: -0.1),
+                      const SizedBox(height: 16),
+                      _buildPaymentMethodTile(
+                        title: 'ABA KHQR',
+                        subtitle: 'Scan to pay with any banking app',
+                        svgAsset: 'assets/images/payment/ABA_BANK_khqr.svg',
+                        onTap: () => _navigateToAbaCheckout('abapay_khqr', 'ABA KHQR'),
+                      ),
+                      const SizedBox(height: 12),
+                      _buildPaymentMethodTile(
+                        title: 'ABA Mobile App',
+                        subtitle: 'Open ABA app to pay instantly',
+                        svgAsset: 'assets/images/payment/ABA_BANK_khqr.svg',
+                        onTap: () => _navigateToAbaCheckout('abapay_deeplink', 'ABA Mobile App'),
+                      ),
+                      const SizedBox(height: 12),
+                      // Saved card tiles
+                      ..._savedCards.asMap().entries.map((entry) =>
+                        _buildSavedCardTile(entry.value),
+                      ),
+                      // Manage / add cards shortcut
+                      _buildPaymentMethodTile(
+                        title: _savedCards.isEmpty ? 'Pay with Card' : 'Add / Manage Cards',
+                        subtitle: _savedCards.isEmpty
+                            ? 'Link your card for faster checkout'
+                            : 'Link a new card or remove existing',
+                        svgAsset: 'assets/images/payment/cards_icons.svg',
+                        onTap: () async {
+                          await Navigator.push(
+                            context,
+                            MaterialPageRoute(builder: (_) => const SavedCardsScreen()),
+                          );
+                          _loadSavedCards(); // refresh after returning
+                        },
+                      ),
+                      const SizedBox(height: 48),
+                    ],
                   ),
-                  svgAsset: 'assets/images/payment/cards_icons.svg',
-                  onTap: () => _navigateToAbaCheckout('cards', 'Credit/Debit Card'),
                 ),
-                const SizedBox(height: 48),
-                _buildPaymentConfirmButton(),
-              ],
-            ),
+              ),
+            ],
           ),
         ),
         if (orderProvider.isLoading && !_isCheckingPayment)
@@ -448,31 +559,120 @@ class _AbaCheckoutScreenState extends State<AbaCheckoutScreen> {
     ).animate().fadeIn(delay: 200.ms).slideY(begin: 0.1);
   }
 
-  Widget _buildPaymentConfirmButton() {
-    return Column(
-      children: [
-        const Text(
-          'Already made the payment?',
-          style: TextStyle(color: AppColors.textSecondaryLight, fontSize: 14),
-        ),
-        const SizedBox(height: 12),
-        SizedBox(
-          width: double.infinity,
-          height: 56,
-          child: OutlinedButton(
-            onPressed: _isCheckingPayment ? null : _verifyPayment,
-            style: OutlinedButton.styleFrom(
-              side: const BorderSide(color: AppColors.primaryStart, width: 2),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+  Future<void> _payByToken(SavedCard card) async {
+    if (_isPayingByToken) return;
+    setState(() => _isPayingByToken = true);
+
+    try {
+      final success = await _cardService.payByToken(widget.orderId, card.index);
+
+      if (!mounted) return;
+
+      if (success) {
+        Navigator.of(context).pushReplacement(
+          MaterialPageRoute(builder: (_) => const OrderSuccessScreen()),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Payment failed: $e'),
+            backgroundColor: AppColors.errorLight,
+          ),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _isPayingByToken = false);
+    }
+  }
+
+  Widget _buildSavedCardTile(SavedCard card) {
+    final isVisa = card.cardType.toLowerCase() == 'visa';
+    final isMC = card.cardType.toLowerCase() == 'mc' ||
+        card.cardType.toLowerCase() == 'mastercard';
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: 12),
+      child: InkWell(
+        onTap: _isPayingByToken ? null : () => _payByToken(card),
+        borderRadius: BorderRadius.circular(16),
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              colors: isVisa
+                  ? [const Color(0xFF1A1F71), const Color(0xFF1565C0)]
+                  : isMC
+                      ? [const Color(0xFF1B1B1B), const Color(0xFF333333)]
+                      : [AppColors.primaryStart, AppColors.primaryEnd],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
             ),
-            child: _isCheckingPayment
-                ? const SizedBox(height: 20, width: 20, child: CircularProgressIndicator(strokeWidth: 2))
-                : const Text('Verify Payment Status', 
-                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: AppColors.primaryStart)
+            borderRadius: BorderRadius.circular(16),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.18),
+                blurRadius: 12,
+                offset: const Offset(0, 5),
+              )
+            ],
+          ),
+          child: Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 5),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(6),
+                ),
+                child: Text(
+                  card.brandIcon,
+                  style: TextStyle(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 11,
+                    color: isVisa ? const Color(0xFF1A1F71) : Colors.black87,
+                    letterSpacing: 1,
                   ),
+                ),
+              ),
+              const SizedBox(width: 14),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      card.maskPan,
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 15,
+                        letterSpacing: 2,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    const Text(
+                      'Tap to pay instantly',
+                      style: TextStyle(color: Colors.white60, fontSize: 11),
+                    ),
+                  ],
+                ),
+              ),
+              if (_isPayingByToken)
+                const SizedBox(
+                  width: 20,
+                  height: 20,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2,
+                    color: Colors.white,
+                  ),
+                )
+              else
+                const Icon(Icons.touch_app_outlined, color: Colors.white70, size: 22),
+            ],
           ),
         ),
-      ],
-    ).animate().fadeIn(delay: 400.ms).slideY(begin: 0.2);
+      ),
+    ).animate().fadeIn(delay: 150.ms).slideX(begin: 0.05);
   }
 }

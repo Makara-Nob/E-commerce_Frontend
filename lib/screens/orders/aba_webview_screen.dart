@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:webview_flutter/webview_flutter.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -28,6 +29,15 @@ class _AbaWebViewScreenState extends State<AbaWebViewScreen> {
   late final WebViewController _controller;
   bool _isLoading = true;
 
+  String _escapeHtml(String value) {
+    return value
+        .replaceAll('&', '&amp;')
+        .replaceAll('"', '&quot;')
+        .replaceAll("'", '&#x27;')
+        .replaceAll('<', '&lt;')
+        .replaceAll('>', '&gt;');
+  }
+
   @override
   void initState() {
     super.initState();
@@ -36,8 +46,14 @@ class _AbaWebViewScreenState extends State<AbaWebViewScreen> {
       ..setJavaScriptMode(JavaScriptMode.unrestricted)
       ..setNavigationDelegate(
         NavigationDelegate(
-          onPageStarted: (url) => setState(() => _isLoading = true),
-          onPageFinished: (url) => setState(() => _isLoading = false),
+          onProgress: (int progress) {},
+          onWebResourceError: (WebResourceError error) {},
+          onPageStarted: (url) {
+            if (mounted) setState(() => _isLoading = true);
+          },
+          onPageFinished: (url) {
+            if (mounted) setState(() => _isLoading = false);
+          },
           onNavigationRequest: (request) async {
             final url = request.url;
             final returnUrl = widget.paywayPayload?['return_url'] as String?;
@@ -68,26 +84,40 @@ class _AbaWebViewScreenState extends State<AbaWebViewScreen> {
         ),
       );
 
-    if (widget.initialUrl != null && widget.initialUrl!.isNotEmpty) {
-      _controller.loadRequest(Uri.parse(widget.initialUrl!));
-    } else if (widget.htmlContent != null) {
-      _controller.loadHtmlString(widget.htmlContent!);
-    } else if (widget.paywayPayload != null && widget.paywayApiUrl != null) {
-      // Prepare the HTML form for auto-submitting POST request
-      final String formHtml = '''
-        <html>
-          <body onload="document.forms[0].submit()">
-            <form method="POST" action="${widget.paywayApiUrl}">
-              ${widget.paywayPayload!.entries.map((e) => '<input type="hidden" name="${e.key}" value="${e.value}">').join('\n')}
-            </form>
-            <div style="display: flex; justify-content: center; align-items: center; height: 100vh; font-family: sans-serif;">
-              <p>Redirecting to ABA PayWay...</p>
-            </div>
-          </body>
-        </html>
-      ''';
-      _controller.loadHtmlString(formHtml);
-    }
+    // Yield execution to allow Android's WebView Platform Channel and Pigeon NavigationDelegates to natively instantiate
+    // before we throw dynamic POST requests at it, dodging the `arg_pigeon_instance != null` crash.
+    Future.delayed(const Duration(milliseconds: 300), () {
+      if (!mounted) return;
+      
+      if (widget.initialUrl != null && widget.initialUrl!.isNotEmpty) {
+        _controller.loadRequest(Uri.parse(widget.initialUrl!));
+      } else if (widget.htmlContent != null) {
+        _controller.loadHtmlString(widget.htmlContent!);
+      } else if (widget.paywayPayload != null && widget.paywayApiUrl != null) {
+        debugPrint('--- SENDING NATIVE POST REQUEST TO ${widget.paywayApiUrl} ---');
+        
+        // Correctly URL-encode all payload components natively to prevent transmission truncation
+        final String bodyString = widget.paywayPayload!.entries
+            .map((e) {
+              debugPrint('[ABA Payload] ${e.key}: ${e.value}');
+              return '${Uri.encodeQueryComponent(e.key)}=${Uri.encodeQueryComponent(e.value.toString())}';
+            })
+            .join('&');
+            
+        debugPrint('----------------------------------------------');
+
+        // Execute a native URL POST directly through the WebViewController.
+        // This guarantees headers, origins, and encodings perfectly mirror standard applications like Postman.
+        _controller.loadRequest(
+          Uri.parse(widget.paywayApiUrl!),
+          method: LoadRequestMethod.post,
+          headers: {
+            'Content-Type': 'application/x-www-form-urlencoded;charset=utf-8',
+          },
+          body: Uint8List.fromList(utf8.encode(bodyString)),
+        );
+      }
+    });
   }
 
   @override

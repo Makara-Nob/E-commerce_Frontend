@@ -46,29 +46,37 @@ class Product {
   });
 
   factory Product.fromJson(Map<String, dynamic> json) {
+    // Utility to parse double safely
+    double parseDouble(dynamic value) {
+      if (value == null) return 0.0;
+      if (value is num) return value.toDouble();
+      if (value is String) return double.tryParse(value) ?? 0.0;
+      return 0.0;
+    }
+
     return Product(
-      id: json['id'] ?? 0,
-      name: json['name'] ?? '',
-      sku: json['sku'] ?? '',
-      description: json['description'],
-      category: json['category'] != null ? Category.fromJson(json['category']) : null,
-      supplier: json['supplier'] != null ? Supplier.fromJson(json['supplier']) : null,
-      brand: json['brand'] != null ? Brand.fromJson(json['brand']) : null,
-      quantity: json['quantity'] ?? 0,
-      minStock: json['minStock'] ?? 0,
-      costPrice: (json['costPrice'] ?? 0).toDouble(),
-      sellingPrice: (json['sellingPrice'] ?? 0).toDouble(),
-      status: json['status'] ?? '',
-      createdAt: json['createdAt'] != null ? DateTime.parse(json['createdAt']) : null,
-      updatedAt: json['updatedAt'] != null ? DateTime.parse(json['updatedAt']) : null,
-      createdBy: json['createdBy'],
-      updatedBy: json['updatedBy'],
+      id: json['id'] is int ? json['id'] : (json['_id'] is int ? json['_id'] : int.tryParse(json['id']?.toString() ?? json['_id']?.toString() ?? '0') ?? 0),
+      name: json['name']?.toString() ?? '',
+      sku: json['sku']?.toString() ?? '',
+      description: json['description']?.toString(),
+      category: json['category'] != null && json['category'] is Map<String, dynamic> ? Category.fromJson(json['category']) : null,
+      supplier: json['supplier'] != null && json['supplier'] is Map<String, dynamic> ? Supplier.fromJson(json['supplier']) : null,
+      brand: json['brand'] != null && json['brand'] is Map<String, dynamic> ? Brand.fromJson(json['brand']) : null,
+      quantity: json['quantity'] is int ? json['quantity'] : (int.tryParse(json['quantity']?.toString() ?? '0') ?? 0),
+      minStock: json['minStock'] is int ? json['minStock'] : (int.tryParse(json['minStock']?.toString() ?? '0') ?? 0),
+      costPrice: parseDouble(json['costPrice']),
+      sellingPrice: parseDouble(json['sellingPrice'] ?? json['price'] ?? json['unitPrice']),
+      status: json['status']?.toString() ?? 'ACTIVE',
+      createdAt: json['createdAt'] != null ? DateTime.tryParse(json['createdAt'].toString()) : null,
+      updatedAt: json['updatedAt'] != null ? DateTime.tryParse(json['updatedAt'].toString()) : null,
+      createdBy: json['createdBy']?.toString(),
+      updatedBy: json['updatedBy']?.toString(),
       variants: (json['variants'] as List<dynamic>?)
               ?.map((e) => ProductVariant.fromJson(e))
               .toList() ??
           [],
-      viewCount: json['viewCount'] ?? 0,
-      imageUrl: json['imageUrl'],
+      viewCount: json['viewCount'] is int ? json['viewCount'] : (int.tryParse(json['viewCount']?.toString() ?? '0') ?? 0),
+      imageUrl: json['imageUrl']?.toString(),
       images: (json['images'] as List<dynamic>?)
               ?.map((e) => e.toString())
               .toList() ??

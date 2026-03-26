@@ -11,6 +11,10 @@ class Order {
   final String? notes;
   final DateTime? createdAt;
   final DateTime? updatedAt;
+  final String? invoiceNumber;
+  final String? paymentMethod;
+  final double? discountAmount;
+  final double? netAmount;
   
   // PayWay specific fields returned in checkout response
   final Map<String, dynamic>? paywayPayload;
@@ -27,6 +31,10 @@ class Order {
     this.notes,
     this.createdAt,
     this.updatedAt,
+    this.invoiceNumber,
+    this.paymentMethod,
+    this.discountAmount,
+    this.netAmount,
     this.paywayPayload,
     this.paywayApiUrl,
   });
@@ -49,6 +57,10 @@ class Order {
       notes: orderJson['notes'],
       createdAt: orderJson['createdAt'] != null ? DateTime.parse(orderJson['createdAt']) : null,
       updatedAt: orderJson['updatedAt'] != null ? DateTime.parse(orderJson['updatedAt']) : null,
+      invoiceNumber: orderJson['invoiceNumber'],
+      paymentMethod: orderJson['paymentMethod'],
+      discountAmount: (orderJson['discountAmount'] ?? 0).toDouble(),
+      netAmount: (orderJson['netAmount'] ?? orderJson['totalAmount'] ?? 0).toDouble(),
       paywayPayload: json['paywayPayload'] as Map<String, dynamic>?,
       paywayApiUrl: json['paywayApiUrl'] as String?,
     );
@@ -66,6 +78,10 @@ class Order {
       'notes': notes,
       'createdAt': createdAt?.toIso8601String(),
       'updatedAt': updatedAt?.toIso8601String(),
+      'invoiceNumber': invoiceNumber,
+      'paymentMethod': paymentMethod,
+      'discountAmount': discountAmount,
+      'netAmount': netAmount,
       'paywayPayload': paywayPayload,
       'paywayApiUrl': paywayApiUrl,
     };

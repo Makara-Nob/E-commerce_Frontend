@@ -6,9 +6,13 @@ import '../../providers/cart_provider.dart';
 import '../../providers/order_provider.dart';
 import '../../theme/app_colors.dart';
 import '../auth/login_screen.dart';
+import '../auth/register_screen.dart';
 import '../home/home_screen.dart';
 import 'edit_profile_screen.dart';
 import 'address_list_screen.dart';
+import 'saved_cards_screen.dart';
+import 'wishlist_screen.dart';
+import '../../providers/wishlist_provider.dart';
 import '../orders/order_list_screen.dart';
 
 class ProfileScreen extends StatelessWidget {
@@ -64,19 +68,38 @@ class ProfileScreen extends StatelessWidget {
                 ),
           ).animate().fadeIn(delay: 200.ms).slideY(begin: 0.2, end: 0),
           const SizedBox(height: 40),
-          FilledButton(
-            onPressed: () {
-              Navigator.of(context).push(
-                MaterialPageRoute(builder: (_) => const LoginScreen()),
-              );
-            },
-            style: FilledButton.styleFrom(
-              padding: const EdgeInsets.symmetric(horizontal: 50, vertical: 16),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30)),
-              elevation: 0,
-            ),
-            child: const Text('Login / Sign Up', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
-          ).animate().fadeIn(delay: 400.ms).scale(),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              OutlinedButton(
+                onPressed: () {
+                  Navigator.of(context).push(
+                    MaterialPageRoute(builder: (_) => const LoginScreen()),
+                  );
+                },
+                style: OutlinedButton.styleFrom(
+                  padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30)),
+                  side: BorderSide(color: Theme.of(context).colorScheme.primary, width: 2),
+                ),
+                child: const Text('Login', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+              ).animate().fadeIn(delay: 400.ms).scale(),
+              const SizedBox(width: 16),
+              FilledButton(
+                onPressed: () {
+                  Navigator.of(context).push(
+                    MaterialPageRoute(builder: (_) => const RegisterScreen()),
+                  );
+                },
+                style: FilledButton.styleFrom(
+                  padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30)),
+                  elevation: 0,
+                ),
+                child: const Text('Sign Up', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+              ).animate().fadeIn(delay: 500.ms).scale(),
+            ],
+          ),
         ],
       ),
     );
@@ -142,47 +165,26 @@ class ProfileScreen extends StatelessWidget {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            user?.fullName ?? user?.username ?? 'User',
+                            user?.fullName ?? 'User',
                             style: const TextStyle(
                               fontSize: 22,
                               fontWeight: FontWeight.bold,
                               color: Colors.black87,
                             ),
                           ),
-                          const SizedBox(height: 4),
-                          Text(
-                            user?.email ?? '',
-                            style: TextStyle(
-                              fontSize: 14,
-                              color: Colors.grey[600],
-                            ),
-                          ),
-                          const SizedBox(height: 8),
-                          Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                            decoration: BoxDecoration(
-                              color: theme.colorScheme.primary.withOpacity(0.1),
-                              borderRadius: BorderRadius.circular(20),
-                            ),
-                            child: Text(
-                              user?.role ?? 'Customer',
-                              style: TextStyle(
-                                fontSize: 12,
-                                fontWeight: FontWeight.w600,
-                                color: theme.colorScheme.primary,
+                          if (user?.username != null)
+                            Padding(
+                              padding: const EdgeInsets.only(top: 2),
+                              child: Text(
+                                '${user!.username}',
+                                style: TextStyle(
+                                  fontSize: 14,
+                                  color: theme.colorScheme.primary,
+                                  fontWeight: FontWeight.w500,
+                                ),
                               ),
                             ),
-                          ),
                         ],
-                      ),
-                    ),
-                    // Edit Button
-                    IconButton(
-                      onPressed: () => _navigateToEditProfile(context),
-                      icon: const Icon(Icons.edit_outlined),
-                      style: IconButton.styleFrom(
-                        backgroundColor: Colors.grey[100],
-                        padding: const EdgeInsets.all(12),
                       ),
                     ),
                   ],
@@ -212,14 +214,14 @@ class ProfileScreen extends StatelessWidget {
                     onTap: () => _navigateToEditProfile(context)),
                     
                   const Divider(height: 1, indent: 64),
-                  
-                  _buildMenuItem(context, Icons.history_rounded, 'Order History',
-                    subtitle: 'View and track your orders',
+
+                  _buildMenuItem(context, Icons.favorite_outline_rounded, 'My Wishlist',
+                    subtitle: 'Items you have saved',
                     onTap: () {
                       Navigator.push(
                         context,
                         MaterialPageRoute(
-                          builder: (_) => const OrderListScreen(),
+                          builder: (_) => const WishlistScreen(),
                         ),
                       );
                     }),
@@ -233,6 +235,19 @@ class ProfileScreen extends StatelessWidget {
                         context,
                         MaterialPageRoute(
                           builder: (_) => const AddressListScreen(),
+                        ),
+                      );
+                    }),
+
+                  const Divider(height: 1, indent: 64),
+
+                  _buildMenuItem(context, Icons.credit_card_outlined, 'Saved Cards',
+                    subtitle: 'Pay faster with stored cards',
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => const SavedCardsScreen(),
                         ),
                       );
                     }),
@@ -269,6 +284,7 @@ class ProfileScreen extends StatelessWidget {
                         // Clear Cart State
                         if (context.mounted) {
                            Provider.of<CartProvider>(context, listen: false).clearLocalCart();
+                           Provider.of<WishlistProvider>(context, listen: false).clear();
                         }
                         
                         await authProvider.logout();

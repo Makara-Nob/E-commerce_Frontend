@@ -5,19 +5,19 @@ import 'package:flutter_animate/flutter_animate.dart';
 import '../../providers/order_provider.dart';
 import '../../theme/app_colors.dart';
 import '../../widgets/empty_state.dart';
-import '../../widgets/glass_container.dart';
-import '../../widgets/brand_logo.dart';
 import 'order_detail_screen.dart';
 
 class OrderListScreen extends StatefulWidget {
   final bool showBackButton;
   final bool showFilter;
   final String? initialStatus;
+  final String title;
   const OrderListScreen({
-    super.key, 
+    super.key,
     this.showBackButton = true,
     this.showFilter = true,
     this.initialStatus,
+    this.title = 'My Orders',
   });
 
   @override
@@ -28,13 +28,13 @@ class _OrderListScreenState extends State<OrderListScreen> {
   final ScrollController _scrollController = ScrollController();
   String? _selectedStatus;
 
-  final List<String> _statuses = [
-    'ALL',
-    'PENDING',
-    'PROCESSING',
-    'SHIPPED',
-    'DELIVERED',
-    'CANCELLED',
+  final List<Map<String, String?>> _tabs = [
+    {'label': 'All',         'status': null},
+    {'label': 'To Pay',      'status': 'PENDING'},
+    {'label': 'Preparing',   'status': 'CONFIRMED'},
+    {'label': 'On the Way',  'status': 'SHIPPED'},
+    {'label': 'Completed',   'status': 'DELIVERED'},
+    {'label': 'Cancelled',   'status': 'CANCELLED'},
   ];
 
   String _formatCurrency(double amount) {
@@ -53,24 +53,26 @@ class _OrderListScreenState extends State<OrderListScreen> {
 
   Color _getStatusColor(String status) {
     switch (status.toUpperCase()) {
-      case 'PENDING': return Colors.orange;
-      case 'PROCESSING': return Colors.blue;
-      case 'SHIPPED': return Colors.indigo;
+      case 'PENDING':   return Colors.orange;
+      case 'CONFIRMED': return Colors.blue;
+      case 'SHIPPED':   return Colors.indigo;
       case 'DELIVERED': return Colors.green;
       case 'CANCELLED': return Colors.red;
-      default: return Colors.grey;
+      default:          return Colors.grey;
     }
   }
 
   @override
   void initState() {
     super.initState();
-    _selectedStatus = widget.initialStatus ?? 'ALL';
+    _selectedStatus = (widget.initialStatus == null || widget.initialStatus == 'ALL')
+        ? null
+        : widget.initialStatus;
     _scrollController.addListener(_onScroll);
     WidgetsBinding.instance.addPostFrameCallback((_) {
       Provider.of<OrderProvider>(context, listen: false).loadOrders(
         refresh: true,
-        status: _selectedStatus == 'ALL' ? null : _selectedStatus,
+        status: _selectedStatus,
       );
     });
   }
@@ -85,7 +87,7 @@ class _OrderListScreenState extends State<OrderListScreen> {
     if (_scrollController.position.pixels >= _scrollController.position.maxScrollExtent - 200) {
       final orderProvider = Provider.of<OrderProvider>(context, listen: false);
       if (!orderProvider.isFetchingMore && orderProvider.hasMore) {
-        orderProvider.loadMoreOrders(status: _selectedStatus == 'ALL' ? null : _selectedStatus);
+        orderProvider.loadMoreOrders(status: _selectedStatus);
       }
     }
   }
@@ -96,7 +98,7 @@ class _OrderListScreenState extends State<OrderListScreen> {
     });
     Provider.of<OrderProvider>(context, listen: false).loadOrders(
       refresh: true,
-      status: status == 'ALL' ? null : status,
+      status: status,
     );
   }
 
@@ -104,54 +106,28 @@ class _OrderListScreenState extends State<OrderListScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.grey[50],
+      appBar: AppBar(
+        title: Text(
+          widget.title,
+          style: const TextStyle(fontWeight: FontWeight.bold),
+        ),
+        backgroundColor: Colors.white,
+        elevation: 0,
+        centerTitle: true,
+        foregroundColor: Colors.black,
+        automaticallyImplyLeading: widget.showBackButton,
+        actions: [
+          IconButton(
+            onPressed: () => Provider.of<OrderProvider>(context, listen: false).loadOrders(
+              refresh: true,
+              status: _selectedStatus,
+            ),
+            icon: const Icon(Icons.refresh_rounded),
+          ),
+        ],
+      ),
       body: Column(
         children: [
-          // ── Glassmorphic App Bar ────────────────────────────────────────────
-          Padding(
-            padding: const EdgeInsets.only(top: 8),
-            child: GlassContainer(
-              margin: const EdgeInsets.fromLTRB(16, 0, 16, 8),
-              padding: const EdgeInsets.symmetric(vertical: 2),
-              blur: 15,
-              opacity: 0.08,
-              borderRadius: BorderRadius.circular(30),
-              child: SafeArea(
-                bottom: false,
-                child: Padding(
-                  padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
-                  child: Row(
-                    children: [
-                      if (widget.showBackButton) ...[
-                        IconButton(
-                          onPressed: () => Navigator.pop(context),
-                          icon: const Icon(Icons.arrow_back_ios_new_rounded, color: AppColors.textPrimaryLight, size: 20),
-                        ),
-                        const SizedBox(width: 8),
-                      ],
-                      const Text(
-                        'My Orders',
-                        style: TextStyle(
-                          color: AppColors.textPrimaryLight,
-                          fontSize: 20,
-                          fontWeight: FontWeight.w900,
-                          letterSpacing: 0.5,
-                        ),
-                      ),
-                      const Spacer(),
-                      IconButton(
-                        onPressed: () => Provider.of<OrderProvider>(context, listen: false).loadOrders(
-                          refresh: true, 
-                          status: _selectedStatus == 'ALL' ? null : _selectedStatus
-                        ),
-                        icon: const Icon(Icons.refresh_rounded, color: AppColors.textPrimaryLight),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            ),
-          ).animate().fadeIn().slideY(begin: -0.1),
-
           // ── Filter Bar ──────────────────────────────────────────────────────
           if (widget.showFilter)
             SizedBox(
@@ -159,19 +135,19 @@ class _OrderListScreenState extends State<OrderListScreen> {
               child: ListView.separated(
                 scrollDirection: Axis.horizontal,
                 padding: const EdgeInsets.symmetric(horizontal: 20),
-                itemCount: _statuses.length,
+                itemCount: _tabs.length,
                 separatorBuilder: (_, __) => const SizedBox(width: 8),
                 itemBuilder: (context, index) {
-                  final status = _statuses[index];
-                  final isSelected = (_selectedStatus ?? 'ALL') == status;
+                  final tab = _tabs[index];
+                  final isSelected = _selectedStatus == tab['status'];
                   return Center(
                     child: AnimatedContainer(
                       duration: 300.ms,
                       child: ChoiceChip(
-                        label: Text(status),
+                        label: Text(tab['label']!),
                         selected: isSelected,
                         onSelected: (selected) {
-                          if (selected) _onStatusChanged(status);
+                          if (selected) _onStatusChanged(tab['status']);
                         },
                         selectedColor: AppColors.primaryStart,
                         labelStyle: TextStyle(
@@ -202,12 +178,15 @@ class _OrderListScreenState extends State<OrderListScreen> {
                 }
 
                 if (orderProvider.orders.isEmpty) {
+                  final selectedLabel = _tabs
+                      .firstWhere((t) => t['status'] == _selectedStatus,
+                          orElse: () => _tabs.first)['label'];
                   return EmptyState(
                     icon: Icons.history_rounded,
                     title: 'No orders found',
-                    description: _selectedStatus == null || _selectedStatus == 'ALL' 
-                      ? 'Your order history will appear here once you make a purchase'
-                      : 'You have no orders with status: $_selectedStatus',
+                    description: _selectedStatus == null
+                        ? 'Your order history will appear here once you make a purchase'
+                        : 'You have no "$selectedLabel" orders',
                   );
                 }
 
@@ -315,7 +294,7 @@ class _OrderCard extends StatelessWidget {
                         borderRadius: BorderRadius.circular(12),
                       ),
                       child: Text(
-                        order.status.toUpperCase(),
+                        (order.statusLabel ?? order.status).toUpperCase(),
                         style: TextStyle(
                           color: statusColor,
                           fontWeight: FontWeight.w900,

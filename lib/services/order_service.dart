@@ -78,6 +78,16 @@ class OrderService {
     );
   }
 
+  // Cancel a PENDING order
+  Future<ApiResponse<Order>> cancelOrder(int id) async {
+    return await _apiService.post<Order>(
+      ApiConstants.cancelOrder(id),
+      body: {},
+      requiresAuth: true,
+      fromJson: (json) => Order.fromJson(json['order']),
+    );
+  }
+
   // Get PayWay payload for existing order
   Future<ApiResponse<Map<String, dynamic>>> getPaywayPayload(int id, String paymentOption) async {
     return await _apiService.post<Map<String, dynamic>>(

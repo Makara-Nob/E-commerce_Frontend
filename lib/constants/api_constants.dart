@@ -2,8 +2,8 @@ class ApiConstants {
   // Base URL - Change this to your computer's IP address for physical device testing
   // For Android Emulator use: http://10.0.2.2:8888
   // For physical device use: http://YOUR_IP:8888 (e.g., http://192.168.1.100:8888)
-  // static const String baseUrl = 'https://ecommerce-backend-v8k1.onrender.com';
-  static const String baseUrl = 'http://10.0.2.2:5000';
+  static const String baseUrl = 'https://ecommerce-backend-v8k1.onrender.com';
+  // static const String baseUrl = 'http://10.107.53.225:5000';
 
   //api request time config
   static const Duration requestTimeout = Duration(seconds: 30);
@@ -17,8 +17,8 @@ class ApiConstants {
   static const String verifyOtp = '/api/v1/auth/verify-otp';
   static const String resendOtp = '/api/v1/auth/resend-otp';
   static const String validateToken = '/api/v1/auth/validate-token';
-  static const String getProfile = '/api/v1/auth/me';
-  static const String updateProfile = '/api/v1/auth/token/update-profile';
+  static const String getProfile = '/api/v1/user/profile';
+  static const String updateProfile = '/api/v1/user/profile';
   
   // Public Product endpoints (no auth required)
   static const String publicProducts = '/api/v1/public/products/all';
@@ -34,12 +34,17 @@ class ApiConstants {
   static const String cartItems = '/api/v1/cart/items';
   static String cartItem(int itemId) => '/api/v1/cart/items/$itemId';
   
+  // Pricing endpoints
+  static const String pricingConfig  = '/api/v1/pricing-config';
+  static const String calculateOrder = '/api/v1/orders/calculate';
+
   // Order endpoints (auth required)
   static const String orders = '/api/v1/orders';
   static const String myOrders = '/api/v1/orders/my-orders';
   static const String linkCard = '/api/v1/orders/link-card';
   static String orderById(int id) => '/api/v1/orders/$id';
   static String checkPayment(int id) => '/api/v1/orders/$id/check-payment';
+  static String cancelOrder(int id) => '/api/v1/orders/$id/cancel';
   static String paywayPayload(int id) => '/api/v1/orders/$id/payway-payload';
   static String payByToken(int id) => '/api/v1/orders/$id/pay-by-token';
 

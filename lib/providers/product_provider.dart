@@ -103,12 +103,31 @@ class ProductProvider with ChangeNotifier {
     await loadProducts(refresh: true);
   }
 
+  /// Set multiple filters at once without triggering individual loads.
+  /// Call [loadProducts(refresh: true)] after this to fetch results once.
+  void setFilters({
+    String? searchQuery,
+    String? categoryId,
+    String? brandId,
+    double? minPrice,
+    double? maxPrice,
+    String? sortBy,
+  }) {
+    _searchQuery = (searchQuery == null || searchQuery.isEmpty) ? null : searchQuery;
+    _selectedCategoryId = (categoryId == null || categoryId.isEmpty) ? null : categoryId;
+    _selectedBrandId = (brandId == null || brandId.isEmpty) ? null : brandId;
+    _minPrice = minPrice;
+    _maxPrice = maxPrice;
+    _sortBy = sortBy;
+  }
+
   Future<void> clearFilters() async {
     _searchQuery = null;
     _selectedCategoryId = null;
     _selectedBrandId = null;
     _minPrice = null;
     _maxPrice = null;
+    _sortBy = null;
     await loadProducts(refresh: true);
   }
 

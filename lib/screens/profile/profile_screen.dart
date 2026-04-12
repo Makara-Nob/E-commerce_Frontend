@@ -138,8 +138,8 @@ class ProfileScreen extends StatelessWidget {
                             : null,
                         child: (user?.profileUrl == null || user!.profileUrl!.isEmpty)
                             ? Text(
-                                user?.fullName?.isNotEmpty == true
-                                    ? user!.fullName![0].toUpperCase()
+                                user?.firstName?.isNotEmpty == true
+                                    ? user!.firstName![0].toUpperCase()
                                     : (user?.username?.isNotEmpty == true
                                         ? user!.username![0].toUpperCase()
                                         : 'U'),
@@ -159,7 +159,9 @@ class ProfileScreen extends StatelessWidget {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          user?.fullName ?? 'User',
+                          '${user?.firstName ?? ''} ${user?.lastName ?? ''}'.trim().isNotEmpty
+                              ? '${user?.firstName ?? ''} ${user?.lastName ?? ''}'.trim()
+                              : 'User',
                           style: const TextStyle(
                             fontSize: 22,
                             fontWeight: FontWeight.w900,
@@ -228,7 +230,7 @@ class ProfileScreen extends StatelessWidget {
                       Navigator.push(
                         context,
                         MaterialPageRoute(
-                          builder: (_) => const OrderListScreen(),
+                          builder: (_) => const OrderListScreen(title: 'Order History'),
                         ),
                       );
                     }),

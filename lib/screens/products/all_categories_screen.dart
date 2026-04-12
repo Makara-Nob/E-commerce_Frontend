@@ -5,7 +5,6 @@ import '../../providers/home_provider.dart';
 import '../../providers/product_provider.dart';
 import '../../theme/app_colors.dart';
 import 'all_products_screen.dart';
-import '../../widgets/gradient_background.dart';
 
 class AllCategoriesScreen extends StatelessWidget {
   const AllCategoriesScreen({super.key});
@@ -13,32 +12,16 @@ class AllCategoriesScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: Colors.grey[50],
+      appBar: AppBar(
+        title: const Text('All Categories', style: TextStyle(fontWeight: FontWeight.bold)),
+        backgroundColor: Colors.white,
+        elevation: 0,
+        centerTitle: true,
+        foregroundColor: Colors.black,
+      ),
       body: Column(
         children: [
-          // ── App Bar ──────────────────────────────────────────────────────
-          GradientBackground(
-            child: SafeArea(
-              bottom: false,
-              child: Padding(
-                padding: const EdgeInsets.fromLTRB(16, 12, 8, 16),
-                child: Row(
-                  children: [
-                    IconButton(
-                      onPressed: () => Navigator.pop(context),
-                      icon: const Icon(Icons.arrow_back_ios_new_rounded, color: Colors.white, size: 20),
-                    ),
-                    const SizedBox(width: 8),
-                    const Text(
-                      'All Categories',
-                      style: TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.bold),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          ),
-
-          // ── Grid Body ────────────────────────────────────────────────────
           Expanded(
             child: Consumer<HomeProvider>(
               builder: (context, homeProvider, _) {

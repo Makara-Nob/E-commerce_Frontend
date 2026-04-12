@@ -5,7 +5,6 @@ import '../../models/product/product_list_response.dart';
 import '../../models/api_response.dart';
 import '../../widgets/product_card.dart';
 import '../../widgets/shimmer_loading.dart';
-import '../../widgets/gradient_background.dart';
 import '../../theme/app_colors.dart';
 import 'product_detail_screen.dart';
 import '../profile/wishlist_screen.dart';
@@ -74,45 +73,25 @@ class _NewArrivalsScreenState extends State<NewArrivalsScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: Column(
-        children: [
-          GradientBackground(
-            child: SafeArea(
-              bottom: false,
-              child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
-                child: Row(
-                  children: [
-                    IconButton(
-                      icon: const Icon(Icons.arrow_back, color: Colors.white),
-                      onPressed: () => Navigator.pop(context),
-                    ),
-                    const SizedBox(width: 8),
-                    const Icon(Icons.fiber_new_rounded, color: Colors.white, size: 26),
-                    const SizedBox(width: 10),
-                    const Text(
-                      'New Arrivals',
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontSize: 22,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    const Spacer(),
-                    IconButton(
-                      icon: const Icon(Icons.favorite_border, color: Colors.white),
-                      onPressed: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(builder: (_) => const WishlistScreen()),
-                        );
-                      },
-                    ),
-                  ],
-                ),
-              ),
+      backgroundColor: Colors.grey[50],
+      appBar: AppBar(
+        title: const Text('New Arrivals', style: TextStyle(fontWeight: FontWeight.bold)),
+        backgroundColor: Colors.white,
+        elevation: 0,
+        centerTitle: true,
+        foregroundColor: Colors.black,
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.favorite_border),
+            onPressed: () => Navigator.push(
+              context,
+              MaterialPageRoute(builder: (_) => const WishlistScreen()),
             ),
           ),
+        ],
+      ),
+      body: Column(
+        children: [
           Expanded(
             child: _products.isEmpty && _isLoading
                 ? GridView.builder(

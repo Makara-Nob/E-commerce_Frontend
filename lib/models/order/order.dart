@@ -6,6 +6,7 @@ class Order {
   final List<OrderItem> items;
   final double totalAmount;
   final String status;
+  final String? statusLabel;
   final String? deliveryAddress;
   final String? deliveryPhone;
   final String? notes;
@@ -26,6 +27,7 @@ class Order {
     required this.items,
     required this.totalAmount,
     required this.status,
+    this.statusLabel,
     this.deliveryAddress,
     this.deliveryPhone,
     this.notes,
@@ -52,6 +54,7 @@ class Order {
           [],
       totalAmount: (orderJson['totalAmount'] ?? 0).toDouble(),
       status: orderJson['status'] ?? '',
+      statusLabel: orderJson['statusLabel'],
       deliveryAddress: orderJson['deliveryAddress'] ?? orderJson['shippingAddress'],
       deliveryPhone: orderJson['deliveryPhone'],
       notes: orderJson['notes'],
@@ -73,6 +76,7 @@ class Order {
       'items': items.map((item) => item.toJson()).toList(),
       'totalAmount': totalAmount,
       'status': status,
+      'statusLabel': statusLabel,
       'deliveryAddress': deliveryAddress,
       'deliveryPhone': deliveryPhone,
       'notes': notes,

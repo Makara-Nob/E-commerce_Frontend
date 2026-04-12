@@ -20,7 +20,8 @@ class RegisterScreen extends StatefulWidget {
 class _RegisterScreenState extends State<RegisterScreen> {
   final _usernameController = TextEditingController();
   final _emailController = TextEditingController();
-  final _fullNameController = TextEditingController();
+  final _firstNameController = TextEditingController();
+  final _lastNameController = TextEditingController();
   final _passwordController = TextEditingController();
   final _formKey = GlobalKey<FormState>();
   bool _isLoading = false;
@@ -30,7 +31,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
   void dispose() {
     _usernameController.dispose();
     _emailController.dispose();
-    _fullNameController.dispose();
+    _firstNameController.dispose();
+    _lastNameController.dispose();
     _passwordController.dispose();
     super.dispose();
   }
@@ -47,7 +49,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
           _usernameController.text.trim(),
           _emailController.text.trim(),
           _passwordController.text,
-          _fullNameController.text.trim(),
+          _firstNameController.text.trim(),
+          _lastNameController.text.trim(),
         );
 
         if (!mounted) return;
@@ -122,18 +125,39 @@ class _RegisterScreenState extends State<RegisterScreen> {
                         key: _formKey,
                         child: Column(
                           children: [
-                            TextFormField(
-                              controller: _fullNameController,
-                              decoration: InputDecoration(
-                                labelText: 'Full Name',
-                                labelStyle: TextStyle(color: Colors.grey[600], fontSize: 14),
-                                prefixIcon: Icon(Icons.badge_outlined, color: AppColors.primaryStart),
-                                border: OutlineInputBorder(borderRadius: BorderRadius.circular(16), borderSide: BorderSide.none),
-                                filled: true,
-                                fillColor: Colors.grey[100],
-                                contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
-                              ),
-                              validator: (value) => value?.isEmpty ?? true ? 'Please enter your full name' : null,
+                            Row(
+                              children: [
+                                Expanded(
+                                  child: TextFormField(
+                                    controller: _firstNameController,
+                                    decoration: InputDecoration(
+                                      labelText: 'First Name',
+                                      labelStyle: TextStyle(color: Colors.grey[600], fontSize: 14),
+                                      prefixIcon: Icon(Icons.badge_outlined, color: AppColors.primaryStart),
+                                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(16), borderSide: BorderSide.none),
+                                      filled: true,
+                                      fillColor: Colors.grey[100],
+                                      contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+                                    ),
+                                    validator: (value) => value?.isEmpty ?? true ? 'Required' : null,
+                                  ),
+                                ),
+                                const SizedBox(width: 12),
+                                Expanded(
+                                  child: TextFormField(
+                                    controller: _lastNameController,
+                                    decoration: InputDecoration(
+                                      labelText: 'Last Name',
+                                      labelStyle: TextStyle(color: Colors.grey[600], fontSize: 14),
+                                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(16), borderSide: BorderSide.none),
+                                      filled: true,
+                                      fillColor: Colors.grey[100],
+                                      contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+                                    ),
+                                    validator: (value) => value?.isEmpty ?? true ? 'Required' : null,
+                                  ),
+                                ),
+                              ],
                             ),
                             const SizedBox(height: 16),
                             TextFormField(

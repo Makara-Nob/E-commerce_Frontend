@@ -1,3 +1,4 @@
+import 'package:e_commerce/screens/products/all_products_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:flutter_animate/flutter_animate.dart';
@@ -11,12 +12,12 @@ import '../../widgets/shimmer_loading.dart';
 import '../../widgets/gradient_background.dart';
 import '../../theme/app_colors.dart';
 import 'product_detail_screen.dart';
-import 'all_products_screen.dart';
 import 'popular_products_screen.dart';
 import 'new_arrivals_screen.dart';
 import 'promotion_list_screen.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'all_categories_screen.dart';
+import 'search_screen.dart';
 import '../profile/wishlist_screen.dart';
 import '../notifications/notification_screen.dart';
 import '../../providers/notification_provider.dart';
@@ -35,9 +36,6 @@ class ProductListScreen extends StatefulWidget {
 }
 
 class _ProductListScreenState extends State<ProductListScreen> {
-  final _searchController = TextEditingController();
-  bool _isSearching = false;
-
   // State for home sections
   List<Product> _popularProducts = [];
   List<Product> _latestProducts = [];
@@ -55,9 +53,9 @@ class _ProductListScreenState extends State<ProductListScreen> {
 
   @override
   void dispose() {
-    _searchController.dispose();
     super.dispose();
   }
+
 
   Future<void> _loadSections() async {
     if (!mounted) return;
@@ -81,14 +79,6 @@ class _ProductListScreenState extends State<ProductListScreen> {
     }
   }
 
-  void _startSearch() => setState(() => _isSearching = true);
-
-  void _stopSearch() {
-    setState(() {
-      _isSearching = false;
-      _searchController.clear();
-    });
-  }
 
   Future<void> _launchURL(String url) async {
     if (url.startsWith('/products/')) {
@@ -136,111 +126,78 @@ class _ProductListScreenState extends State<ProductListScreen> {
                   padding: const EdgeInsets.fromLTRB(16, 8, 8, 8),
                   child: Row(
                     children: [
-                      if (!_isSearching) ...[
-                        // Compact logo icon
-                          BrandLogo(isCompact: true, showTitle: false, isLight: false)
-                              .animate()
-                              .fadeIn(duration: 500.ms)
-                              .scale(begin: const Offset(0.8, 0.8)),
-                        const Spacer(),
-                        IconButton(
-                          onPressed: () {
-                            final auth = Provider.of<AuthProvider>(context, listen: false);
-                            if (!auth.isAuthenticated) {
-                              Navigator.push(context, MaterialPageRoute(builder: (_) => const LoginScreen()));
-                            } else {
-                              Navigator.push(
-                                context,
-                                MaterialPageRoute(builder: (_) => const WishlistScreen()),
-                              );
-                            }
-                          },
-                          icon: const Icon(Icons.favorite_border, color: AppColors.textPrimaryLight),
-                        ),
-                        Consumer<NotificationProvider>(
-                          builder: (context, notificationProvider, child) {
-                            return Stack(
-                              alignment: Alignment.center,
-                              children: [
-                                IconButton(
-                                  onPressed: () {
-                                    Navigator.push(
-                                      context,
-                                      MaterialPageRoute(builder: (_) => const NotificationScreen()),
-                                    );
-                                  },
-                                  icon: const Icon(Icons.notifications_none, color: AppColors.textPrimaryLight),
-                                ),
-                                if (notificationProvider.unreadCount > 0)
-                                  Positioned(
-                                    right: 8,
-                                    top: 8,
-                                    child: Container(
-                                      padding: const EdgeInsets.all(4),
-                                      decoration: const BoxDecoration(
-                                        color: Colors.red,
-                                        shape: BoxShape.circle,
+                      // Compact logo icon
+                      BrandLogo(isCompact: true, showTitle: false, isLight: false)
+                          .animate()
+                          .fadeIn(duration: 500.ms)
+                          .scale(begin: const Offset(0.8, 0.8)),
+                      const Spacer(),
+                      IconButton(
+                        onPressed: () {
+                          final auth = Provider.of<AuthProvider>(context, listen: false);
+                          if (!auth.isAuthenticated) {
+                            Navigator.push(context, MaterialPageRoute(builder: (_) => const LoginScreen()));
+                          } else {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(builder: (_) => const WishlistScreen()),
+                            );
+                          }
+                        },
+                        icon: const Icon(Icons.favorite_border, color: AppColors.textPrimaryLight),
+                      ),
+                      Consumer<NotificationProvider>(
+                        builder: (context, notificationProvider, child) {
+                          return Stack(
+                            alignment: Alignment.center,
+                            children: [
+                              IconButton(
+                                onPressed: () {
+                                  Navigator.push(
+                                    context,
+                                    MaterialPageRoute(builder: (_) => const NotificationScreen()),
+                                  );
+                                },
+                                icon: const Icon(Icons.notifications_none, color: AppColors.textPrimaryLight),
+                              ),
+                              if (notificationProvider.unreadCount > 0)
+                                Positioned(
+                                  right: 8,
+                                  top: 8,
+                                  child: Container(
+                                    padding: const EdgeInsets.all(4),
+                                    decoration: const BoxDecoration(
+                                      color: Colors.red,
+                                      shape: BoxShape.circle,
+                                    ),
+                                    constraints: const BoxConstraints(
+                                      minWidth: 16,
+                                      minHeight: 16,
+                                    ),
+                                    child: Text(
+                                      notificationProvider.unreadCount > 9 ? '9+' : '${notificationProvider.unreadCount}',
+                                      style: const TextStyle(
+                                        color: Colors.white,
+                                        fontSize: 10,
+                                        fontWeight: FontWeight.bold,
+                                        height: 1,
                                       ),
-                                      constraints: const BoxConstraints(
-                                        minWidth: 16,
-                                        minHeight: 16,
-                                      ),
-                                      child: Text(
-                                        notificationProvider.unreadCount > 9 ? '9+' : '${notificationProvider.unreadCount}',
-                                        style: const TextStyle(
-                                          color: Colors.white,
-                                          fontSize: 10,
-                                          fontWeight: FontWeight.bold,
-                                          height: 1,
-                                        ),
-                                        textAlign: TextAlign.center,
-                                      ),
+                                      textAlign: TextAlign.center,
                                     ),
                                   ),
-                              ],
-                            );
-                          },
+                                ),
+                            ],
+                          );
+                        },
+                      ),
+                      // Search icon → navigates to dedicated SearchScreen
+                      IconButton(
+                        onPressed: () => Navigator.push(
+                          context,
+                          MaterialPageRoute(builder: (_) => const SearchScreen()),
                         ),
-                        IconButton(
-                          onPressed: _startSearch,
-                          icon: const Icon(Icons.search, color: AppColors.textPrimaryLight),
-                        ),
-                      ] else ...[
-                        Expanded(
-                          child: Container(
-                            height: 40,
-                            decoration: BoxDecoration(
-                              color: Colors.white.withOpacity(0.5),
-                              borderRadius: BorderRadius.circular(20),
-                            ),
-                            child: TextField(
-                              controller: _searchController,
-                              autofocus: true,
-                              style: const TextStyle(color: Colors.black87),
-                              decoration: const InputDecoration(
-                                hintText: 'Search products...',
-                                hintStyle: TextStyle(color: Colors.grey),
-                                border: InputBorder.none,
-                                prefixIcon: Icon(Icons.search, color: Colors.grey),
-                                contentPadding: EdgeInsets.symmetric(vertical: 8),
-                              ),
-                              onSubmitted: (value) {
-                                Navigator.push(
-                                  context,
-                                  MaterialPageRoute(
-                                    builder: (_) => AllProductsScreen(initialSearch: value),
-                                  ),
-                                );
-                                _stopSearch();
-                              },
-                            ),
-                          ),
-                        ),
-                        IconButton(
-                          onPressed: _stopSearch,
-                          icon: const Icon(Icons.close, color: AppColors.textPrimaryLight),
-                        ),
-                      ],
+                        icon: const Icon(Icons.search, color: AppColors.textPrimaryLight),
+                      ),
                     ],
                   ),
                 ),
@@ -362,15 +319,15 @@ class _ProductListScreenState extends State<ProductListScreen> {
                               onShowMore: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const AllCategoriesScreen())),
                             ),
                             SizedBox(
-                              height: 170,
+                              height: 100,
                               child: ListView.separated(
                                 padding: const EdgeInsets.symmetric(horizontal: 16),
                                 scrollDirection: Axis.horizontal,
                                 itemCount: homeProvider.categories.length,
-                                separatorBuilder: (_, __) => const SizedBox(width: 12),
+                                separatorBuilder: (_, __) => const SizedBox(width: 16),
                                 itemBuilder: (context, index) {
                                   final cat = homeProvider.categories[index];
-                                  return _LargeCategoryCard(
+                                  return _CircleCategoryItem(
                                     title: cat.name,
                                     imageUrl: cat.icon,
                                     onTap: () {
@@ -583,14 +540,14 @@ class _SectionHeader extends StatelessWidget {
   }
 }
 
-// ── Immersive Large Category Card Widget ──────────────────────────────────────────────
-class _LargeCategoryCard extends StatelessWidget {
+// ── Compact Circle Category Item ─────────────────────────────────────────────
+class _CircleCategoryItem extends StatelessWidget {
   final String title;
   final String? imageUrl;
   final VoidCallback onTap;
   final int index;
 
-  const _LargeCategoryCard({
+  const _CircleCategoryItem({
     required this.title,
     this.imageUrl,
     required this.onTap,
@@ -601,78 +558,55 @@ class _LargeCategoryCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return GestureDetector(
       onTap: onTap,
-      child: Container(
-        width: 130,
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(24),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.12),
-              blurRadius: 15,
-              offset: const Offset(0, 6),
-            ),
-          ],
-        ),
-        child: Stack(
-          fit: StackFit.expand,
+      child: SizedBox(
+        width: 70,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
           children: [
-            // Background Image
-            ClipRRect(
-              borderRadius: BorderRadius.circular(24),
-              child: imageUrl != null && imageUrl!.isNotEmpty
-                  ? Image.network(
-                      imageUrl!,
-                      fit: BoxFit.cover,
-                      errorBuilder: (_, __, ___) => Container(
-                        color: Colors.grey[200],
-                        child: Icon(Icons.category, color: AppColors.primaryStart, size: 40),
-                      ),
-                    )
-                  : Container(
-                      color: Colors.grey[200],
-                      child: Icon(Icons.category, color: AppColors.primaryStart, size: 40),
-                    ),
-            ),
-            // Gradient Overlay
             Container(
+              width: 64,
+              height: 64,
               decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(24),
-                gradient: LinearGradient(
-                  begin: Alignment.topCenter,
-                  end: Alignment.bottomCenter,
-                  colors: [
-                    Colors.transparent,
-                    Colors.black.withOpacity(0.1),
-                    Colors.black.withOpacity(0.8),
-                  ],
-                  stops: const [0.5, 0.7, 1.0],
-                ),
+                shape: BoxShape.circle,
+                boxShadow: [
+                  BoxShadow(
+                    color: AppColors.primaryStart.withOpacity(0.18),
+                    blurRadius: 10,
+                    offset: const Offset(0, 4),
+                  ),
+                ],
+              ),
+              child: ClipOval(
+                child: imageUrl != null && imageUrl!.isNotEmpty
+                    ? Image.network(
+                        imageUrl!,
+                        fit: BoxFit.cover,
+                        errorBuilder: (_, __, ___) => Container(
+                          color: Colors.grey[200],
+                          child: Icon(Icons.category, color: AppColors.primaryStart, size: 28),
+                        ),
+                      )
+                    : Container(
+                        color: Colors.grey[200],
+                        child: Icon(Icons.category, color: AppColors.primaryStart, size: 28),
+                      ),
               ),
             ),
-            // Title
-            Positioned(
-              bottom: 16,
-              left: 12,
-              right: 12,
-              child: Text(
-                title,
-                textAlign: TextAlign.center,
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
-                style: const TextStyle(
-                  fontSize: 14,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.white,
-                  letterSpacing: 0.5,
-                  shadows: [
-                    Shadow(color: Colors.black45, blurRadius: 4, offset: Offset(0, 2)),
-                  ],
-                ),
+            const SizedBox(height: 6),
+            Text(
+              title,
+              textAlign: TextAlign.center,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: const TextStyle(
+                fontSize: 11,
+                fontWeight: FontWeight.w600,
+                letterSpacing: 0.2,
               ),
             ),
           ],
         ),
       ),
-    ).animate().fadeIn(delay: (index * 60).ms).scale(begin: const Offset(0.95, 0.95));
+    ).animate().fadeIn(delay: (index * 60).ms).scale(begin: const Offset(0.85, 0.85));
   }
 }

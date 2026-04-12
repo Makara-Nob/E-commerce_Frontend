@@ -276,6 +276,20 @@ class ApiService {
   ) {
     try {
       print('📥 ApiService: Response status ${response.statusCode}');
+      
+      final contentType = response.headers['content-type'] ?? '';
+      final isJson = contentType.contains('application/json') || 
+                     (response.body.startsWith('{') || response.body.startsWith('['));
+
+      if (!isJson) {
+        print('📦 ApiService: Received non-JSON response (starts with: ${response.body.length > 20 ? response.body.substring(0, 20).replaceAll("\n", " ") : response.body.replaceAll("\n", " ")}...)');
+        return ApiResponse<T>(
+          success: false,
+          message: 'Server error: ${response.statusCode}',
+          error: 'Expected JSON, got HTML/text',
+        );
+      }
+
       print('📦 ApiService: Response body: ${response.body}');
       final jsonResponse = jsonDecode(response.body);
 
@@ -312,7 +326,7 @@ class ApiService {
       print('💥 ApiService: Failed to parse response - $e');
       return ApiResponse<T>(
         success: false,
-        message: 'Failed to parse response',
+        message: 'Failed to process server response',
         error: e.toString(),
       );
     }
@@ -326,6 +340,20 @@ class ApiService {
   ) {
     try {
       print('📥 ApiService: Response status ${response.statusCode}');
+      
+      final contentType = response.headers['content-type'] ?? '';
+      final isJson = contentType.contains('application/json') || 
+                     (response.body.startsWith('{') || response.body.startsWith('['));
+
+      if (!isJson) {
+        print('📦 ApiService: Received non-JSON list response (starts with: ${response.body.length > 20 ? response.body.substring(0, 20).replaceAll("\n", " ") : response.body.replaceAll("\n", " ")}...)');
+        return ApiResponse<List<T>>(
+          success: false,
+          message: 'Server error: ${response.statusCode}',
+          error: 'Expected JSON, got HTML/text',
+        );
+      }
+
       print('📦 ApiService: Response body: ${response.body}');
       final jsonResponse = jsonDecode(response.body);
 
@@ -339,7 +367,16 @@ class ApiService {
 
       if (response.statusCode >= 200 && response.statusCode < 300) {
         if (isSuccess && jsonResponse['data'] != null) {
-          final List<dynamic> dataList = jsonResponse['data'] is List ? jsonResponse['data'] : [];
+          dynamic data = jsonResponse['data'];
+          List<dynamic> dataList = [];
+          
+          if (data is List) {
+            dataList = data;
+          } else if (data is Map && data.containsKey('content') && data['content'] is List) {
+            dataList = data['content'];
+            print('📦 ApiService: Found "content" list inside "data" object');
+          }
+
           final List<T> items = dataList.map((item) => fromJson(item)).toList();
           print('✅ ApiService: Success response for $endpoint (Found ${items.length} items)');
           return ApiResponse<List<T>>(
@@ -367,7 +404,7 @@ class ApiService {
       print('💥 ApiService: Failed to parse list response for $endpoint - $e');
       return ApiResponse<List<T>>(
         success: false,
-        message: 'Failed to parse response',
+        message: 'Failed to process server response',
         error: e.toString(),
       );
     }

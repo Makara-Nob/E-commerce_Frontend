@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import '../../services/card_service.dart';
 import '../../models/payment/saved_card.dart';
+import '../../constants/api_constants.dart';
 import '../../theme/app_colors.dart';
 import '../orders/aba_webview_screen.dart';
 import 'package:http/http.dart' as http;
@@ -76,8 +77,7 @@ class _SavedCardsScreenState extends State<SavedCardsScreen> {
       final result = await _cardService.initLinkCard();
       if (!mounted) return;
 
-      final cofPayload = result['cofPayload'] as Map<String, dynamic>;
-      final cofApiUrl = result['cofApiUrl'] as String;
+      final cofUrl = result['cofUrl'] as String;
 
       if (!mounted) return;
 
@@ -85,15 +85,19 @@ class _SavedCardsScreenState extends State<SavedCardsScreen> {
         context,
         MaterialPageRoute(
           builder: (_) => AbaWebViewScreen(
-            paywayPayload: cofPayload,
-            paywayApiUrl: cofApiUrl,
+            initialUrl: cofUrl,
             methodName: 'Link Card',
-            htmlContent: null,
+            successUrl: '${ApiConstants.baseUrl}/api/v1/orders/payway-webhook',
           ),
         ),
       );
-      // Reload cards after returning from WebView
-      await _loadCards();
+      
+      // Give the S2S webhook a moment to finish saving the card
+      if (mounted) {
+        setState(() => _isLoading = true);
+        await Future.delayed(const Duration(milliseconds: 2000));
+        await _loadCards();
+      }
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -129,11 +133,23 @@ class _SavedCardsScreenState extends State<SavedCardsScreen> {
             ),
         ],
       ),
-      body: _isLoading
-          ? const Center(child: CircularProgressIndicator())
-          : _cards.isEmpty
-              ? _buildEmpty()
-              : _buildCardList(),
+      body: RefreshIndicator(
+        onRefresh: _loadCards,
+        color: AppColors.primaryStart,
+        child: _isLoading && _cards.isEmpty
+            ? const Center(child: CircularProgressIndicator())
+            : _cards.isEmpty
+                ? SingleChildScrollView(
+                    physics: const AlwaysScrollableScrollPhysics(),
+                    child: SizedBox(
+                      height: MediaQuery.of(context).size.height - 
+                             AppBar().preferredSize.height - 
+                             MediaQuery.of(context).padding.top,
+                      child: _buildEmpty(),
+                    ),
+                  )
+                : _buildCardList(),
+      ),
     );
   }
 

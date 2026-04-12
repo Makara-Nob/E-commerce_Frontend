@@ -2,8 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:provider/provider.dart';
 import '../../providers/auth_provider.dart';
+import '../../providers/order_provider.dart';
 import '../../providers/product_provider.dart';
 import '../../providers/cart_provider.dart';
+import '../../providers/notification_provider.dart';
+import '../../services/notification_service.dart';
 import '../../theme/app_colors.dart';
 import '../products/product_list_screen.dart';
 import '../cart/cart_screen.dart';
@@ -18,19 +21,43 @@ class HomeScreen extends StatefulWidget {
   State<HomeScreen> createState() => _HomeScreenState();
 }
 
-class _HomeScreenState extends State<HomeScreen> {
+class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
   int _selectedIndex = 0;
 
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     WidgetsBinding.instance.addPostFrameCallback((_) {
       try {
         Provider.of<ProductProvider>(context, listen: false).loadProducts();
       } catch (e) {
         debugPrint('Error loading products: $e');
       }
+
+      // Wire foreground FCM push → refresh notification badge + list
+      NotificationService().onNotificationReceived = () {
+        if (mounted) {
+          Provider.of<NotificationProvider>(context, listen: false)
+              .fetchNotifications(refresh: true);
+        }
+      };
     });
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  /// Refresh notification count when app comes back to foreground
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed && mounted) {
+      Provider.of<NotificationProvider>(context, listen: false)
+          .fetchNotifications(refresh: true);
+    }
   }
 
   @override
@@ -47,7 +74,7 @@ class _HomeScreenState extends State<HomeScreen> {
           const OrderListScreen(
             showBackButton: false,
             showFilter: false,
-            initialStatus: 'PAID',
+            initialStatus: 'IN_PROGRESS',
           ),
           const ProfileScreen(),
         ];
@@ -110,6 +137,11 @@ class _HomeScreenState extends State<HomeScreen> {
                 if ((label == 'Wishlist' || label == 'Cart' || label == 'Orders') && !isLoggedIn) {
                    Navigator.push(context, MaterialPageRoute(builder: (_) => const LoginScreen()));
                    return;
+                }
+                // Re-fetch in-progress orders every time the Orders tab is tapped
+                if (label == 'Orders' && isLoggedIn) {
+                  Provider.of<OrderProvider>(context, listen: false)
+                      .loadOrders(refresh: true, status: 'IN_PROGRESS');
                 }
                 setState(() => _selectedIndex = index);
               },

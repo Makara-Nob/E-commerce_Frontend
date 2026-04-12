@@ -49,7 +49,6 @@ class AddressProvider with ChangeNotifier {
       final response = await _addressService.createAddress(address);
       if (response.success && response.data != null) {
         if (response.data!.isDefault) {
-           // update others to not default locally
            for (int i = 0; i < _addresses.length; i++) {
              _addresses[i] = AddressModel(
                id: _addresses[i].id,
@@ -66,16 +65,16 @@ class AddressProvider with ChangeNotifier {
         }
         _addresses.insert(0, response.data!);
         _error = null;
-        notifyListeners();
         return true;
       }
       _error = response.message;
-      notifyListeners();
       return false;
     } catch (e) {
       _error = e.toString();
-      notifyListeners();
       return false;
+    } finally {
+      _isLoading = false;
+      notifyListeners();
     }
   }
 
@@ -108,16 +107,16 @@ class AddressProvider with ChangeNotifier {
           _addresses[index] = response.data!;
         }
         _error = null;
-        notifyListeners();
         return true;
       }
       _error = response.message;
-      notifyListeners();
       return false;
     } catch (e) {
       _error = e.toString();
-      notifyListeners();
       return false;
+    } finally {
+      _isLoading = false;
+      notifyListeners();
     }
   }
 
@@ -129,22 +128,17 @@ class AddressProvider with ChangeNotifier {
       final response = await _addressService.deleteAddress(id);
       if (response.success) {
         _addresses.removeWhere((a) => a.id == id);
-        // If we deleted the default, fetch cleanly from server to get new correct state
-        if (!_addresses.any((a) => a.isDefault) && _addresses.isNotEmpty) {
-           await loadAddresses();
-           return true;
-        }
         _error = null;
-        notifyListeners();
         return true;
       }
       _error = response.message;
-      notifyListeners();
       return false;
     } catch (e) {
       _error = e.toString();
-      notifyListeners();
       return false;
+    } finally {
+      _isLoading = false;
+      notifyListeners();
     }
   }
 
@@ -170,16 +164,16 @@ class AddressProvider with ChangeNotifier {
           );
         }
         _error = null;
-        notifyListeners();
         return true;
       }
       _error = response.message;
-      notifyListeners();
       return false;
     } catch (e) {
       _error = e.toString();
-      notifyListeners();
       return false;
+    } finally {
+      _isLoading = false;
+      notifyListeners();
     }
   }
 

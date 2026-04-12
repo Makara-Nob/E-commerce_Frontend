@@ -112,12 +112,14 @@ class AuthService {
 
   // Update Profile
   Future<ApiResponse<UserData>> updateProfile({
-    String? fullName,
+    String? firstName,
+    String? lastName,
     String? phone,
     String? email,
   }) async {
     final Map<String, dynamic> body = {};
-    if (fullName != null) body['fullName'] = fullName;
+    if (firstName != null) body['firstName'] = firstName;
+    if (lastName != null) body['lastName'] = lastName;
     if (phone != null) body['phone'] = phone;
     if (email != null) body['email'] = email;
 

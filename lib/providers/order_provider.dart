@@ -63,6 +63,16 @@ class OrderProvider with ChangeNotifier {
     }
   }
 
+  // Cancel a PENDING order (silently, no notify needed for UI)
+  Future<bool> cancelOrder(int orderId) async {
+    try {
+      final response = await _orderService.cancelOrder(orderId);
+      return response.success;
+    } catch (_) {
+      return false;
+    }
+  }
+
   // Load orders
   Future<void> loadOrders({bool refresh = false, String? status}) async {
     if (refresh) {

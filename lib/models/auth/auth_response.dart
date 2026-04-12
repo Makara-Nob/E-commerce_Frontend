@@ -26,33 +26,42 @@ class UserData {
   final int id;
   final String username;
   final String email;
-  final String? fullName;
+  final String? firstName;
+  final String? lastName;
   final String? phone;
   final String role;
   final bool active;
   final String? profileUrl;
+  final String? address;
 
   UserData({
     required this.id,
     required this.username,
     required this.email,
-    this.fullName,
+    this.firstName,
+    this.lastName,
     this.phone,
     required this.role,
     required this.active,
     this.profileUrl,
+    this.address,
   });
+
+  /// Convenience getter for displaying the full name.
+  String get fullName => '${firstName ?? ''} ${lastName ?? ''}'.trim();
 
   factory UserData.fromJson(Map<String, dynamic> json) {
     return UserData(
-      id: json['id'] ?? 0,
+      id: json['id'] is int ? json['id'] : int.tryParse(json['id']?.toString() ?? '') ?? 0,
       username: json['username'] ?? '',
       email: json['email'] ?? '',
-      fullName: json['fullName'],
-      phone: json['phone'],
+      firstName: json['firstName'],
+      lastName: json['lastName'],
+      phone: json['phone'] ?? json['phoneNumber'],
       role: json['role'] ?? '',
       active: json['active'] ?? false,
-      profileUrl: json['profileUrl'],
+      profileUrl: json['profileUrl'] ?? json['profileImageUrl'],
+      address: json['address'],
     );
   }
 
@@ -61,11 +70,13 @@ class UserData {
       'id': id,
       'username': username,
       'email': email,
-      'fullName': fullName,
+      'firstName': firstName,
+      'lastName': lastName,
       'phone': phone,
       'role': role,
       'active': active,
       'profileUrl': profileUrl,
+      'address': address,
     };
   }
 }

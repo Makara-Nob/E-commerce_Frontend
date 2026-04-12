@@ -35,13 +35,12 @@ class _AllProductsScreenState extends State<AllProductsScreen> {
     _productProvider = Provider.of<ProductProvider>(context, listen: false);
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      _productProvider.filterByCategory(widget.initialCategoryId);
-      _productProvider.filterByBrand(widget.initialBrandId);
-      if (widget.initialSearch != null && widget.initialSearch!.isNotEmpty) {
-        _productProvider.searchProducts(widget.initialSearch!);
-      } else {
-        _productProvider.searchProducts('');
-      }
+      // Set all filters atomically then do one single API call
+      _productProvider.setFilters(
+        categoryId: widget.initialCategoryId,
+        brandId: widget.initialBrandId,
+        searchQuery: widget.initialSearch,
+      );
       _productProvider.loadProducts(refresh: true);
     });
   }

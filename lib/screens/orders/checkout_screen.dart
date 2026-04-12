@@ -10,13 +10,14 @@ import 'dart:convert';
 import '../../providers/cart_provider.dart';
 import '../../providers/order_provider.dart';
 import '../../providers/address_provider.dart';
+import '../../providers/pricing_provider.dart';
+import '../../models/pricing/order_calculation.dart';
 import '../../models/cart/cart_item.dart';
 import '../../models/address/address_model.dart';
 import '../../models/payment/saved_card.dart';
 import '../../services/card_service.dart';
 import '../../theme/app_colors.dart';
 import '../profile/address_list_screen.dart';
-import '../profile/saved_cards_screen.dart';
 import 'order_success_screen.dart';
 import 'aba_webview_screen.dart';
 import 'aba_khqr_screen.dart';
@@ -29,6 +30,7 @@ import 'invoice_screen.dart';
 enum _PaymentChoice {
   khqr,
   abaApp,
+  cards_new,
   savedCard,
 }
 
@@ -52,14 +54,14 @@ class _CheckoutScreenState extends State<CheckoutScreen>
 
   bool _isInit = true;
   bool _isPlacingOrder = false;
-  bool _isPayingByToken = false;
-  bool _isWaitingForReturn = false;
   bool _isCheckingPayment = false;
+  bool _isWaitingForReturn = false;
+  bool _isConfirmingPayment = false;
+  int? _placedOrderId;
 
   List<SavedCard> _savedCards = [];
   final _cardService = CardService();
 
-  int? _placedOrderId;
 
   // ── lifecycle ──────────────────────────────────────────────────────────────
   @override
@@ -76,7 +78,35 @@ class _CheckoutScreenState extends State<CheckoutScreen>
       }
       _isInit = false;
       _loadSavedCards();
+      _triggerCalculation();
     }
+  }
+
+  void _triggerCalculation() {
+    final pp = Provider.of<PricingProvider>(context, listen: false);
+
+    List<Map<String, dynamic>> items;
+    bool isBuyNow;
+
+    if (widget.directItems != null && widget.directItems!.isNotEmpty) {
+      items = widget.directItems!.map((i) => {
+        'productId': i.product.id,
+        'quantity': i.quantity,
+        if (i.variantId != null) 'variantId': i.variantId!,
+      }).toList();
+      isBuyNow = true;
+    } else {
+      final cart = Provider.of<CartProvider>(context, listen: false).cart;
+      if (cart == null || cart.items.isEmpty) return;
+      items = cart.items.map((i) => {
+        'productId': i.product.id,
+        'quantity': i.quantity,
+        if (i.variantId != null) 'variantId': i.variantId!,
+      }).toList();
+      isBuyNow = false;
+    }
+
+    pp.calculate(items: items, isBuyNow: isBuyNow);
   }
 
   @override
@@ -122,6 +152,9 @@ class _CheckoutScreenState extends State<CheckoutScreen>
       final ok = await op.checkPaymentStatus(orderId);
       if (!mounted) return false;
       if (ok && op.currentOrder?.status == 'CONFIRMED') {
+        if (widget.directItems == null) {
+          Provider.of<CartProvider>(context, listen: false).clearLocalCart();
+        }
         Navigator.of(context).pushReplacement(
           MaterialPageRoute(
             builder: (_) => InvoiceScreen(order: op.currentOrder!),
@@ -135,6 +168,48 @@ class _CheckoutScreenState extends State<CheckoutScreen>
       if (mounted && !silent) setState(() => _isCheckingPayment = false);
     }
     return false;
+  }
+
+  void _startPollingAfterWebView(int orderId) {
+    int attempts = 0;
+    if (mounted) _showSnack('Verifying payment, please wait...', isError: false);
+
+    void poll() async {
+      if (!mounted) return;
+      attempts++;
+      final success = await _verifyPayment(orderId, silent: true);
+      if (success) return;
+
+      if (attempts < 8) {
+        Future.delayed(const Duration(seconds: 3), poll);
+      } else {
+        if (!mounted) return;
+        setState(() => _isConfirmingPayment = false);
+        // Cancel the PENDING order so it doesn't pollute the order list
+        Provider.of<OrderProvider>(context, listen: false).cancelOrder(orderId);
+        showDialog(
+          context: context,
+          barrierDismissible: false,
+          builder: (_) => AlertDialog(
+            title: const Text('Payment Not Confirmed'),
+            content: const Text(
+              'We could not verify your payment. Your order has been cancelled and no charge was made. Please try again.',
+            ),
+            actions: [
+              TextButton(
+                onPressed: () {
+                  Navigator.of(context).pop(); // close dialog
+                  Navigator.of(context).pop(); // go back to cart
+                },
+                child: const Text('OK'),
+              ),
+            ],
+          ),
+        );
+      }
+    }
+
+    poll();
   }
 
   // ── place order then route by payment choice ───────────────────────────────
@@ -195,9 +270,6 @@ class _CheckoutScreenState extends State<CheckoutScreen>
         return;
       }
 
-      if (widget.directItems == null) {
-        Provider.of<CartProvider>(context, listen: false).clearLocalCart();
-      }
       final order = orderProvider.currentOrder;
 
       if (order == null) {
@@ -213,13 +285,17 @@ class _CheckoutScreenState extends State<CheckoutScreen>
       } else if (order.paywayPayload != null && order.paywayApiUrl != null) {
         final abaOption = _paymentChoice == _PaymentChoice.khqr
             ? 'abapay_khqr'
-            : 'abapay_deeplink';
+            : _paymentChoice == _PaymentChoice.cards_new
+                ? 'cards_new'
+                : 'abapay_khqr_deeplink';
         await _processAbaPayment(
           orderId: order.id,
           abaOption: abaOption,
           methodName: _paymentChoice == _PaymentChoice.khqr
               ? 'ABA KHQR'
-              : 'ABA Mobile App',
+              : _paymentChoice == _PaymentChoice.cards_new
+                  ? 'Credit / Debit Card'
+                  : 'ABA Mobile App',
           orderProvider: orderProvider,
         );
       } else {
@@ -236,11 +312,14 @@ class _CheckoutScreenState extends State<CheckoutScreen>
   }
 
   Future<void> _payByToken(int orderId, SavedCard card) async {
-    setState(() => _isPayingByToken = true);
+    setState(() => _isConfirmingPayment = true);
     try {
       final ok = await _cardService.payByToken(orderId, card.index);
       if (!mounted) return;
       if (ok) {
+        if (widget.directItems == null) {
+          Provider.of<CartProvider>(context, listen: false).clearLocalCart();
+        }
         // ➕ NEW — Navigate to InvoiceScreen with saved-card payment order data
         final op = Provider.of<OrderProvider>(context, listen: false);
         Navigator.of(context).pushReplacement(
@@ -250,12 +329,18 @@ class _CheckoutScreenState extends State<CheckoutScreen>
         );
         // BEFORE: MaterialPageRoute(builder: (_) => const OrderSuccessScreen())
       } else {
-        _showSnack('Card payment failed. Please try another method.');
+        // Cancel the PENDING order so it doesn't pollute the order list
+        Provider.of<OrderProvider>(context, listen: false).cancelOrder(orderId);
+        _showSnack('Card payment failed. Please try another payment method.');
       }
     } catch (e) {
-      if (mounted) _showSnack('Payment failed: $e');
+      if (mounted) {
+        // Also cancel on exception (e.g. ABA returned error code)
+        Provider.of<OrderProvider>(context, listen: false).cancelOrder(orderId);
+        _showSnack('Payment failed: $e');
+      }
     } finally {
-      if (mounted) setState(() => _isPayingByToken = false);
+      if (mounted) setState(() => _isConfirmingPayment = false);
     }
   }
 
@@ -284,7 +369,13 @@ class _CheckoutScreenState extends State<CheckoutScreen>
     );
 
     try {
-      final response = await http.post(Uri.parse(paywayApiUrl), body: paywayPayload);
+      final request = http.MultipartRequest('POST', Uri.parse(paywayApiUrl));
+      paywayPayload.forEach((key, value) {
+        request.fields[key] = value.toString();
+      });
+      final streamedResponse = await request.send();
+      final response = await http.Response.fromStream(streamedResponse);
+      
       if (!mounted) return;
       Navigator.pop(context); // remove loading dialog
 
@@ -357,6 +448,8 @@ class _CheckoutScreenState extends State<CheckoutScreen>
     } catch (e) {
       if (!mounted) return;
       if (Navigator.canPop(context)) Navigator.pop(context);
+      // Cancel the PENDING order since payment initialization failed
+      Provider.of<OrderProvider>(context, listen: false).cancelOrder(orderId);
       _showSnack('Payment Error: $e');
     }
   }
@@ -394,7 +487,14 @@ class _CheckoutScreenState extends State<CheckoutScreen>
           ),
         )
         .then((_) {
-      if (_placedOrderId != null) _verifyPayment(_placedOrderId!);
+      if (_placedOrderId != null) {
+        if (_paymentChoice == _PaymentChoice.cards_new) {
+           setState(() => _isConfirmingPayment = true);
+           _startPollingAfterWebView(_placedOrderId!);
+        } else {
+           _verifyPayment(_placedOrderId!);
+        }
+      }
     });
   }
 
@@ -413,9 +513,11 @@ class _CheckoutScreenState extends State<CheckoutScreen>
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
 
-    return Scaffold(
-      backgroundColor: const Color(0xFFF5F5F7),
-      appBar: AppBar(
+    return Stack(
+      children: [
+        Scaffold(
+          backgroundColor: const Color(0xFFF5F5F7),
+          appBar: AppBar(
         title: const Text(
           'Checkout',
           style: TextStyle(fontWeight: FontWeight.bold, color: Colors.white),
@@ -481,9 +583,23 @@ class _CheckoutScreenState extends State<CheckoutScreen>
                     _buildPaymentMethodKhqr(),
                     const SizedBox(height: 8),
                     _buildPaymentMethodAbaApp(),
-                    const SizedBox(height: 8),
-                    ..._savedCards.map((c) => _buildSavedCardOption(c)),
-                    _buildManageCards(),
+                    if (_savedCards.isNotEmpty) ...[
+                      const Padding(
+                        padding: EdgeInsets.only(top: 16, bottom: 8),
+                        child: Text(
+                          'Credit / Debit Cards',
+                          style: TextStyle(
+                              fontSize: 14,
+                              fontWeight: FontWeight.bold,
+                              color: AppColors.textPrimaryLight),
+                        ),
+                      ),
+                      ..._savedCards.map((c) => _buildSavedCardOption(c)),
+                      const SizedBox(height: 8),
+                    ] else ...[
+                      const SizedBox(height: 8),
+                    ],
+                    _buildPaymentMethodCardsNew(),
                     const SizedBox(height: 24),
 
                     // ── 4. Notes ───────────────────────────────────────────
@@ -518,8 +634,42 @@ class _CheckoutScreenState extends State<CheckoutScreen>
           ],
         ),
       ),
-    );
-  }
+    ),
+    if (_isConfirmingPayment)
+      Container(
+        color: Colors.black.withOpacity(0.85),
+        child: Center(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const CircularProgressIndicator(color: Color(0xFFC6A664)),
+              const SizedBox(height: 24),
+              const Text(
+                'Processing Payment...',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                  letterSpacing: 0.5,
+                  decoration: TextDecoration.none,
+                ),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                'Please do not close the app.',
+                style: TextStyle(
+                  color: Colors.white.withOpacity(0.6),
+                  fontSize: 14,
+                  decoration: TextDecoration.none,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    ],
+  );
+}
 
   // ── Section 1: Order Items ─────────────────────────────────────────────────
   Widget _buildOrderItems(ThemeData theme) {
@@ -856,6 +1006,17 @@ class _CheckoutScreenState extends State<CheckoutScreen>
         ),
       );
 
+  Widget _buildPaymentMethodCardsNew() => _buildPaymentOption(
+        choice: _PaymentChoice.cards_new,
+        title: _savedCards.isEmpty ? 'Pay with Credit / Debit Card' : '+ Add New Card',
+        subtitle: _savedCards.isEmpty ? 'Visa, Mastercard, UnionPay' : 'Link a new card for future payments',
+        leading: SvgPicture.asset(
+          'assets/images/payment/cards_icons.svg',
+          width: 44,
+          fit: BoxFit.contain,
+        ),
+      );
+
   Widget _buildSavedCardOption(SavedCard card) {
     final isVisa = card.cardType.toLowerCase() == 'visa';
     final isMC = card.cardType.toLowerCase() == 'mc' ||
@@ -957,67 +1118,13 @@ class _CheckoutScreenState extends State<CheckoutScreen>
     ).animate().fadeIn(delay: 150.ms).slideX(begin: 0.05);
   }
 
-  Widget _buildManageCards() {
-    return GestureDetector(
-      onTap: () async {
-        await Navigator.push(
-          context,
-          MaterialPageRoute(builder: (_) => const SavedCardsScreen()),
-        );
-        _loadSavedCards();
-      },
-      child: Container(
-        padding: const EdgeInsets.all(14),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(14),
-          border: Border.all(color: Colors.grey.shade200, width: 1.5),
-        ),
-        child: Row(
-          children: [
-            SvgPicture.asset(
-              'assets/images/payment/cards_icons.svg',
-              width: 40,
-              fit: BoxFit.contain,
-            ),
-            const SizedBox(width: 14),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    _savedCards.isEmpty ? 'Pay with Card' : 'Add / Manage Cards',
-                    style: const TextStyle(
-                        fontWeight: FontWeight.bold, fontSize: 15),
-                  ),
-                  const SizedBox(height: 2),
-                  Text(
-                    _savedCards.isEmpty
-                        ? 'Link your card for faster checkout'
-                        : 'Link a new card or remove existing',
-                    style: TextStyle(fontSize: 12, color: Colors.grey[600]),
-                  ),
-                ],
-              ),
-            ),
-            const Icon(Icons.chevron_right, color: Colors.grey),
-          ],
-        ),
-      ),
-    ).animate().fadeIn(delay: 200.ms).slideY(begin: 0.1);
-  }
-
   // ── Bottom CTA bar ─────────────────────────────────────────────────────────
   Widget _buildBottomBar(ThemeData theme) {
-    return Consumer<CartProvider>(
-      builder: (context, cartManager, child) {
-        final totalAmount = widget.directItems != null
-            ? widget.directItems!.fold<double>(0, (sum, item) => sum + item.subtotal)
-            : (cartManager.cart?.totalAmount ?? 0);
-        final itemCount = widget.directItems != null
-            ? widget.directItems!.fold<int>(0, (sum, item) => sum + item.quantity)
-            : (cartManager.cart?.items.length ?? 0);
-        final isBusy = _isPlacingOrder || _isPayingByToken || _isCheckingPayment;
+    return Consumer<PricingProvider>(
+      builder: (context, pricingProvider, _) {
+        final calc = pricingProvider.calculation;
+        final isLoadingPricing = pricingProvider.isLoading;
+        final isBusy = _isPlacingOrder || _isConfirmingPayment || _isCheckingPayment;
 
         return Container(
           padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
@@ -1036,22 +1143,18 @@ class _CheckoutScreenState extends State<CheckoutScreen>
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Text('Total',
-                        style: theme.textTheme.titleMedium
-                            ?.copyWith(color: Colors.grey[600])),
-                    Text(
-                      _formatCurrency(totalAmount),
-                      style: theme.textTheme.headlineSmall?.copyWith(
-                        fontWeight: FontWeight.bold,
-                        color: AppColors.primaryStart,
-                      ),
-                    ),
-                  ],
-                ),
+                // ── Price breakdown ──────────────────────────────────────
+                if (isLoadingPricing)
+                  const Padding(
+                    padding: EdgeInsets.symmetric(vertical: 8),
+                    child: LinearProgressIndicator(),
+                  )
+                else if (calc != null)
+                  _buildPricingBreakdown(calc, theme),
+
                 const SizedBox(height: 14),
+
+                // ── Place Order button ───────────────────────────────────
                 SizedBox(
                   width: double.infinity,
                   child: FilledButton(
@@ -1082,6 +1185,48 @@ class _CheckoutScreenState extends State<CheckoutScreen>
           ),
         );
       },
+    );
+  }
+
+  // ── Pricing breakdown rows ──────────────────────────────────────────────────
+  Widget _buildPricingBreakdown(OrderCalculation calc, ThemeData theme) {
+    final labelStyle = theme.textTheme.bodyMedium?.copyWith(color: Colors.grey[600]);
+    final valueStyle = theme.textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w500);
+    final totalLabelStyle = theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold);
+    final totalValueStyle = theme.textTheme.titleMedium?.copyWith(
+      fontWeight: FontWeight.bold,
+      color: AppColors.primaryStart,
+    );
+
+    Widget row(String label, String value, {TextStyle? ls, TextStyle? vs}) => Padding(
+      padding: const EdgeInsets.symmetric(vertical: 3),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Text(label, style: ls ?? labelStyle),
+          Text(value,  style: vs ?? valueStyle),
+        ],
+      ),
+    );
+
+    return Column(
+      children: [
+        row('Subtotal', _formatCurrency(calc.subtotal)),
+        if (calc.taxAmount > 0)
+          row('Tax (${calc.taxRate.toStringAsFixed(0)}%)', _formatCurrency(calc.taxAmount)),
+        row(
+          'Delivery',
+          calc.deliveryFee > 0 ? _formatCurrency(calc.deliveryFee) : 'Free',
+          vs: calc.deliveryFee == 0
+              ? valueStyle?.copyWith(color: Colors.green[600])
+              : valueStyle,
+        ),
+        if (calc.discountAmount > 0)
+          row('Discount', '-${_formatCurrency(calc.discountAmount)}',
+              vs: valueStyle?.copyWith(color: Colors.green[600])),
+        const Divider(height: 16),
+        row('Total', _formatCurrency(calc.total), ls: totalLabelStyle, vs: totalValueStyle),
+      ],
     );
   }
 

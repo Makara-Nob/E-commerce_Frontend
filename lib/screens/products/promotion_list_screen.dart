@@ -3,7 +3,6 @@ import 'package:provider/provider.dart';
 import '../../models/home/promotion_model.dart';
 import '../../providers/home_provider.dart';
 import '../../widgets/product_card.dart';
-import '../../widgets/gradient_background.dart';
 import '../../theme/app_colors.dart';
 import 'product_detail_screen.dart';
 
@@ -20,35 +19,16 @@ class PromotionListScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: Colors.grey[50],
+      appBar: AppBar(
+        title: const Text('Special Offers', style: TextStyle(fontWeight: FontWeight.bold)),
+        backgroundColor: Colors.white,
+        elevation: 0,
+        centerTitle: true,
+        foregroundColor: Colors.black,
+      ),
       body: Column(
         children: [
-          GradientBackground(
-            child: SafeArea(
-              bottom: false,
-              child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
-                child: Row(
-                  children: [
-                    IconButton(
-                      icon: const Icon(Icons.arrow_back, color: Colors.white),
-                      onPressed: () => Navigator.pop(context),
-                    ),
-                    const SizedBox(width: 8),
-                    const Text('🔥', style: TextStyle(fontSize: 22)),
-                    const SizedBox(width: 8),
-                    const Text(
-                      'Special Offers',
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontSize: 22,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          ),
           Expanded(
             child: Consumer<HomeProvider>(
               builder: (context, homeProvider, _) {

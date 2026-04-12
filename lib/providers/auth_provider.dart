@@ -4,6 +4,7 @@ import '../models/auth/auth_response.dart';
 import '../models/auth/register_request.dart';
 import '../services/auth_service.dart';
 import '../services/storage_service.dart';
+import '../services/notification_service.dart';
 
 class AuthProvider with ChangeNotifier {
   final AuthService _authService = AuthService();
@@ -78,10 +79,12 @@ class AuthProvider with ChangeNotifier {
         _isAuthenticated = true;
         _isLoading = false;
         notifyListeners();
+        // Register FCM token now that the JWT is saved
+        await NotificationService().registerDeviceToken();
         return true;
       } else {
-        _errorMessage = response.message.isNotEmpty 
-            ? response.message 
+        _errorMessage = response.message.isNotEmpty
+            ? response.message
             : (response.data?.token.isEmpty ?? true ? 'Login failed: No token received' : 'Login failed');
         _isLoading = false;
         notifyListeners();
@@ -96,7 +99,7 @@ class AuthProvider with ChangeNotifier {
   }
 
   // Register
-  Future<bool> register(String username, String email, String password, String fullName) async {
+  Future<bool> register(String username, String email, String password, String firstName, String lastName) async {
     _isLoading = true;
     _errorMessage = null;
     notifyListeners();
@@ -106,7 +109,8 @@ class AuthProvider with ChangeNotifier {
         username: username,
         email: email,
         password: password,
-        fullName: fullName,
+        firstName: firstName,
+        lastName: lastName,
       );
 
       final response = await _authService.register(request);
@@ -159,10 +163,12 @@ class AuthProvider with ChangeNotifier {
         _isAuthenticated = true;
         _isLoading = false;
         notifyListeners();
+        // Register FCM token now that the JWT is saved
+        await NotificationService().registerDeviceToken();
         return true;
       } else {
-        _errorMessage = response.message.isNotEmpty 
-            ? response.message 
+        _errorMessage = response.message.isNotEmpty
+            ? response.message
             : 'Verification failed';
         _isLoading = false;
         notifyListeners();
@@ -223,7 +229,8 @@ class AuthProvider with ChangeNotifier {
 
   // Update Profile
   Future<bool> updateProfile({
-    String? fullName,
+    String? firstName,
+    String? lastName,
     String? phone,
     String? email,
   }) async {
@@ -233,7 +240,8 @@ class AuthProvider with ChangeNotifier {
 
     try {
       final response = await _authService.updateProfile(
-        fullName: fullName,
+        firstName: firstName,
+        lastName: lastName,
         phone: phone,
         email: email,
       );

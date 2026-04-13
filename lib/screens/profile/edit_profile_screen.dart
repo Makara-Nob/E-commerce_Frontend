@@ -188,9 +188,15 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                                 ? Image.network(
                                     profileImageUrl,
                                     fit: BoxFit.cover,
-                                    errorBuilder: (_,__,___) => const Icon(Icons.person, size: 60, color: Colors.grey),
+                                    errorBuilder: (_, __, ___) => Padding(
+                                      padding: const EdgeInsets.all(24),
+                                      child: Image.asset('assets/images/logo/NAGA.png', fit: BoxFit.contain),
+                                    ),
                                   )
-                                : const Icon(Icons.person, size: 60, color: Colors.grey)),
+                                : Padding(
+                                    padding: const EdgeInsets.all(24),
+                                    child: Image.asset('assets/images/logo/NAGA.png', fit: BoxFit.contain),
+                                  )),
                       ),
                     ),
                     Positioned(
@@ -216,35 +222,28 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
               const SizedBox(height: 32),
 
               // Form Fields
-              Row(
-                children: [
-                  Expanded(
-                    child: TextFormField(
-                      controller: _firstNameController,
-                      decoration: InputDecoration(
-                        labelText: 'First Name',
-                        prefixIcon: const Icon(Icons.person_outline),
-                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-                        filled: true,
-                        fillColor: Colors.grey[50],
-                      ),
-                      validator: (value) => value!.isEmpty ? 'Required' : null,
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: TextFormField(
-                      controller: _lastNameController,
-                      decoration: InputDecoration(
-                        labelText: 'Last Name',
-                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-                        filled: true,
-                        fillColor: Colors.grey[50],
-                      ),
-                      validator: (value) => value!.isEmpty ? 'Required' : null,
-                    ),
-                  ),
-                ],
+              TextFormField(
+                controller: _firstNameController,
+                decoration: InputDecoration(
+                  labelText: 'First Name',
+                  prefixIcon: const Icon(Icons.person_outline),
+                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                  filled: true,
+                  fillColor: Colors.grey[50],
+                ),
+                validator: (value) => value!.isEmpty ? 'Required' : null,
+              ),
+              const SizedBox(height: 16),
+              TextFormField(
+                controller: _lastNameController,
+                decoration: InputDecoration(
+                  labelText: 'Last Name',
+                  prefixIcon: const Icon(Icons.person_outline),
+                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                  filled: true,
+                  fillColor: Colors.grey[50],
+                ),
+                validator: (value) => value!.isEmpty ? 'Required' : null,
               ),
               const SizedBox(height: 20),
 

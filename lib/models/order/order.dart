@@ -5,6 +5,11 @@ class Order {
   final int userId;
   final List<OrderItem> items;
   final double totalAmount;
+  final double? taxRate;
+  final double? taxAmount;
+  final double? deliveryFee;
+  final double? discountAmount;
+  final double? netAmount;
   final String status;
   final String? statusLabel;
   final String? deliveryAddress;
@@ -14,8 +19,6 @@ class Order {
   final DateTime? updatedAt;
   final String? invoiceNumber;
   final String? paymentMethod;
-  final double? discountAmount;
-  final double? netAmount;
   
   // PayWay specific fields returned in checkout response
   final Map<String, dynamic>? paywayPayload;
@@ -26,6 +29,11 @@ class Order {
     required this.userId,
     required this.items,
     required this.totalAmount,
+    this.taxRate,
+    this.taxAmount,
+    this.deliveryFee,
+    this.discountAmount,
+    this.netAmount,
     required this.status,
     this.statusLabel,
     this.deliveryAddress,
@@ -35,8 +43,6 @@ class Order {
     this.updatedAt,
     this.invoiceNumber,
     this.paymentMethod,
-    this.discountAmount,
-    this.netAmount,
     this.paywayPayload,
     this.paywayApiUrl,
   });
@@ -53,6 +59,11 @@ class Order {
               .toList() ??
           [],
       totalAmount: (orderJson['totalAmount'] ?? 0).toDouble(),
+      taxRate: (orderJson['taxRate'] ?? 0).toDouble(),
+      taxAmount: (orderJson['taxAmount'] ?? 0).toDouble(),
+      deliveryFee: (orderJson['deliveryFee'] ?? 0).toDouble(),
+      discountAmount: (orderJson['discountAmount'] ?? 0).toDouble(),
+      netAmount: (orderJson['netAmount'] ?? orderJson['totalAmount'] ?? 0).toDouble(),
       status: orderJson['status'] ?? '',
       statusLabel: orderJson['statusLabel'],
       deliveryAddress: orderJson['deliveryAddress'] ?? orderJson['shippingAddress'],
@@ -62,8 +73,6 @@ class Order {
       updatedAt: orderJson['updatedAt'] != null ? DateTime.parse(orderJson['updatedAt']) : null,
       invoiceNumber: orderJson['invoiceNumber'],
       paymentMethod: orderJson['paymentMethod'],
-      discountAmount: (orderJson['discountAmount'] ?? 0).toDouble(),
-      netAmount: (orderJson['netAmount'] ?? orderJson['totalAmount'] ?? 0).toDouble(),
       paywayPayload: json['paywayPayload'] as Map<String, dynamic>?,
       paywayApiUrl: json['paywayApiUrl'] as String?,
     );
@@ -75,6 +84,11 @@ class Order {
       'userId': userId,
       'items': items.map((item) => item.toJson()).toList(),
       'totalAmount': totalAmount,
+      'taxRate': taxRate,
+      'taxAmount': taxAmount,
+      'deliveryFee': deliveryFee,
+      'discountAmount': discountAmount,
+      'netAmount': netAmount,
       'status': status,
       'statusLabel': statusLabel,
       'deliveryAddress': deliveryAddress,
@@ -84,8 +98,6 @@ class Order {
       'updatedAt': updatedAt?.toIso8601String(),
       'invoiceNumber': invoiceNumber,
       'paymentMethod': paymentMethod,
-      'discountAmount': discountAmount,
-      'netAmount': netAmount,
       'paywayPayload': paywayPayload,
       'paywayApiUrl': paywayApiUrl,
     };

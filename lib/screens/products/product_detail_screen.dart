@@ -1,4 +1,4 @@
-import 'package:e_commerce/constants/api_constants.dart';
+import '../../constants/api_constants.dart';
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -1338,23 +1338,28 @@ $shortDesc
                     style: const TextStyle(fontSize: 14, color: _kPrimary, fontWeight: FontWeight.bold)),
               ),
               const SizedBox(width: 12),
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(review.userName,
-                      style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
-                  const SizedBox(height: 2),
-                  Row(
-                    children: [
-                      _buildStarRating(review.rating, size: 12),
-                      const SizedBox(width: 8),
-                      Text(
-                        DateFormat('MMM dd, yyyy').format(review.createdAt),
-                        style: const TextStyle(fontSize: 11, color: _kSubText),
-                      ),
-                    ],
-                  ),
-                ],
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      review.userName,
+                      style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    const SizedBox(height: 2),
+                    Row(
+                      children: [
+                        _buildStarRating(review.rating, size: 12),
+                        const SizedBox(width: 8),
+                        Text(
+                          DateFormat('MMM dd, yyyy').format(review.createdAt),
+                          style: const TextStyle(fontSize: 11, color: _kSubText),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
               ),
             ],
           ),

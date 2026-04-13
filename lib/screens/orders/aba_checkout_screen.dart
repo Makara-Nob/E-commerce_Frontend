@@ -410,21 +410,7 @@ class _AbaCheckoutScreenState extends State<AbaCheckoutScreen> with WidgetsBindi
                         isSelected: _selectedMethod == 'abapay_deeplink',
                         onTap: () => setState(() => _selectedMethod = 'abapay_deeplink'),
                       ),
-                      const SizedBox(height: 12),
-                      // Saved card tiles
-                      ..._savedCards.asMap().entries.map((entry) =>
-                        _buildSavedCardTile(entry.value),
-                      ),
-                      // Manage / add cards shortcut
-                      _buildPaymentMethodTile(
-                        title: _savedCards.isEmpty ? 'Pay with Card' : 'Add / Manage Cards',
-                        subtitle: _savedCards.isEmpty
-                            ? 'Link your card for faster checkout'
-                            : 'Link a new card or remove existing',
-                        svgAsset: 'assets/images/payment/cards_icons.svg',
-                        isSelected: _selectedMethod == 'add_card',
-                        onTap: () => setState(() => _selectedMethod = 'add_card'),
-                      ),
+                      // Card payment options hidden (feature not available yet)
                       const SizedBox(height: 32),
                       // UNIFIED ACTION BUTTON
                       _buildActionButton(theme),

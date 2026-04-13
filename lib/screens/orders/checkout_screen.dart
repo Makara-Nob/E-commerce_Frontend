@@ -583,23 +583,7 @@ class _CheckoutScreenState extends State<CheckoutScreen>
                     _buildPaymentMethodKhqr(),
                     const SizedBox(height: 8),
                     _buildPaymentMethodAbaApp(),
-                    if (_savedCards.isNotEmpty) ...[
-                      const Padding(
-                        padding: EdgeInsets.only(top: 16, bottom: 8),
-                        child: Text(
-                          'Credit / Debit Cards',
-                          style: TextStyle(
-                              fontSize: 14,
-                              fontWeight: FontWeight.bold,
-                              color: AppColors.textPrimaryLight),
-                        ),
-                      ),
-                      ..._savedCards.map((c) => _buildSavedCardOption(c)),
-                      const SizedBox(height: 8),
-                    ] else ...[
-                      const SizedBox(height: 8),
-                    ],
-                    _buildPaymentMethodCardsNew(),
+                    // Card payment options hidden (feature not available yet)
                     const SizedBox(height: 24),
 
                     // ── 4. Notes ───────────────────────────────────────────

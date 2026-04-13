@@ -275,60 +275,113 @@ class OrderDetailScreen extends StatelessWidget {
               ),
             ),
             const SizedBox(height: 24),
-            Container(
-              padding: const EdgeInsets.all(20),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: const BorderRadius.vertical(top: Radius.circular(32)),
-                boxShadow: [
-                  BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 20, offset: const Offset(0, -5)),
-                ],
-              ),
-              child: Column(
-                children: [
-                  _buildSummaryRow(
-                    'Subtotal',
-                    _formatCurrency(order.totalAmount + (order.discountAmount ?? 0)),
-                  ),
-                  if (order.discountAmount != null && order.discountAmount! > 0) ...[
-                    const SizedBox(height: 8),
-                    _buildSummaryRow(
-                      'Discount',
-                      '-${_formatCurrency(order.discountAmount!)}',
-                      valueColor: Colors.red[400],
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              child: Container(
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(20),
+                  boxShadow: [
+                    BoxShadow(color: Colors.black.withOpacity(0.04), blurRadius: 12, offset: const Offset(0, 4)),
+                  ],
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // Header
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(20, 16, 20, 12),
+                      child: Row(
+                        children: [
+                          Icon(Icons.receipt_long_outlined, size: 18, color: Colors.grey[600]),
+                          const SizedBox(width: 8),
+                          Text(
+                            'Payment Summary',
+                            style: theme.textTheme.titleSmall?.copyWith(
+                              fontWeight: FontWeight.bold,
+                              color: Colors.grey[700],
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const Divider(height: 1),
+                    Padding(
+                      padding: const EdgeInsets.all(20),
+                      child: Column(
+                        children: [
+                          _buildSummaryRow('Subtotal', _formatCurrency(order.totalAmount)),
+                          if ((order.taxAmount ?? 0) > 0) ...[
+                            const SizedBox(height: 10),
+                            _buildSummaryRow(
+                              'Tax (${(order.taxRate ?? 0).toStringAsFixed(0)}%)',
+                              _formatCurrency(order.taxAmount!),
+                            ),
+                          ],
+                          if ((order.deliveryFee ?? 0) > 0) ...[
+                            const SizedBox(height: 10),
+                            _buildSummaryRow('Delivery Fee', _formatCurrency(order.deliveryFee!)),
+                          ] else ...[
+                            const SizedBox(height: 10),
+                            _buildSummaryRow('Delivery Fee', 'Free', valueColor: AppColors.successLight),
+                          ],
+                          if ((order.discountAmount ?? 0) > 0) ...[
+                            const SizedBox(height: 10),
+                            _buildSummaryRow(
+                              'Discount',
+                              '-${_formatCurrency(order.discountAmount!)}',
+                              valueColor: Colors.red[400],
+                            ),
+                          ],
+                          const Padding(padding: EdgeInsets.symmetric(vertical: 14), child: Divider()),
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Text('Total', style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold)),
+                              Text(
+                                _formatCurrency(order.netAmount ?? order.totalAmount),
+                                style: theme.textTheme.titleLarge?.copyWith(
+                                  fontWeight: FontWeight.bold,
+                                  color: AppColors.primaryStart,
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 4),
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.end,
+                            children: [
+                              Icon(Icons.payment_outlined, size: 13, color: Colors.grey[400]),
+                              const SizedBox(width: 4),
+                              Text(
+                                order.paymentMethod?.replaceAll('_', ' ') ?? 'CASH',
+                                style: TextStyle(fontSize: 12, color: Colors.grey[500]),
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
                     ),
                   ],
-                  const Padding(padding: EdgeInsets.symmetric(vertical: 12), child: Divider()),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Text('Total', style: theme.textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold)),
-                      Text(
-                        _formatCurrency(order.netAmount ?? order.totalAmount),
-                        style: theme.textTheme.headlineSmall?.copyWith(
-                          fontWeight: FontWeight.bold,
-                          color: theme.colorScheme.primary,
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 24),
-                  SizedBox(
-                    width: double.infinity,
-                    child: OutlinedButton.icon(
-                      onPressed: () => _handleReorder(context),
-                      icon: const Icon(Icons.reorder),
-                      label: const Text('Reorder All Items'),
-                      style: OutlinedButton.styleFrom(
-                        padding: const EdgeInsets.symmetric(vertical: 16),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 20),
-                ],
+                ),
               ),
             ).animate().slideY(begin: 0.2, end: 0),
+            const SizedBox(height: 16),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              child: SizedBox(
+                width: double.infinity,
+                child: OutlinedButton.icon(
+                  onPressed: () => _handleReorder(context),
+                  icon: const Icon(Icons.reorder),
+                  label: const Text('Reorder All Items'),
+                  style: OutlinedButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(vertical: 16),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                  ),
+                ),
+              ),
+            ),
           ],
         ),
       ),

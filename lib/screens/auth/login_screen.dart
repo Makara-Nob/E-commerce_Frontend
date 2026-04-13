@@ -233,16 +233,29 @@ class _LoginScreenState extends State<LoginScreen> {
                       ),
                     ).animate().fadeIn(delay: 500.ms).slideY(begin: 0.1, end: 0),
                     const SizedBox(height: 24),
-                    TextButton(
-                      onPressed: () {
-                        Navigator.of(context).push(
-                          MaterialPageRoute(builder: (_) => const RegisterScreen()),
-                        );
-                      },
-                      child: Text(
-                        'Don\'t have an account? Register',
-                        style: TextStyle(color: AppColors.primaryStart, fontWeight: FontWeight.bold),
-                      ),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Text(
+                          "Don't have an account? ",
+                          style: TextStyle(color: Colors.grey[600], fontSize: 14),
+                        ),
+                        GestureDetector(
+                          onTap: () => Navigator.of(context).push(
+                            MaterialPageRoute(builder: (_) => const RegisterScreen()),
+                          ),
+                          child: const Text(
+                            'Register',
+                            style: TextStyle(
+                              color: AppColors.primaryStart,
+                              fontSize: 14,
+                              fontWeight: FontWeight.w600,
+                              decoration: TextDecoration.underline,
+                              decorationColor: AppColors.primaryStart,
+                            ),
+                          ),
+                        ),
+                      ],
                     ).animate().fadeIn(delay: 600.ms),
                   ],
                 ),

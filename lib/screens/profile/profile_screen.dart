@@ -9,6 +9,7 @@ import '../auth/login_screen.dart';
 import '../auth/register_screen.dart';
 import '../home/home_screen.dart';
 import 'edit_profile_screen.dart';
+import 'change_password_verify_screen.dart';
 import 'address_list_screen.dart';
 import 'saved_cards_screen.dart';
 import 'wishlist_screen.dart';
@@ -132,21 +133,16 @@ class ProfileScreen extends StatelessWidget {
                       ),
                       child: CircleAvatar(
                         radius: 36,
-                        backgroundColor: AppColors.primaryStart.withOpacity(0.1),
+                        backgroundColor: AppColors.primaryStart.withOpacity(0.08),
                         backgroundImage: (user?.profileUrl != null && user!.profileUrl!.isNotEmpty)
                             ? NetworkImage(user!.profileUrl!)
                             : null,
                         child: (user?.profileUrl == null || user!.profileUrl!.isEmpty)
-                            ? Text(
-                                user?.firstName?.isNotEmpty == true
-                                    ? user!.firstName![0].toUpperCase()
-                                    : (user?.username?.isNotEmpty == true
-                                        ? user!.username![0].toUpperCase()
-                                        : 'U'),
-                                style: TextStyle(
-                                  fontSize: 28,
-                                  fontWeight: FontWeight.w900,
-                                  color: AppColors.primaryStart,
+                            ? Padding(
+                                padding: const EdgeInsets.all(10),
+                                child: Image.asset(
+                                  'assets/images/logo/NAGA.png',
+                                  fit: BoxFit.contain,
                                 ),
                               )
                             : null,
@@ -168,16 +164,28 @@ class ProfileScreen extends StatelessWidget {
                             color: AppColors.textPrimaryLight,
                           ),
                         ),
-                        if (user?.username != null)
+                        if (user?.email != null && user!.email.isNotEmpty)
+                          Padding(
+                            padding: const EdgeInsets.only(top: 3),
+                            child: Text(
+                              user.email,
+                              style: TextStyle(
+                                fontSize: 13,
+                                color: Colors.grey[500],
+                                fontWeight: FontWeight.w400,
+                              ),
+                            ),
+                          ),
+                        if (user?.username case final String username when username.isNotEmpty)
                           Padding(
                             padding: const EdgeInsets.only(top: 2),
                             child: Text(
-                              '@${user!.username}',
+                              '@$username',
                               style: TextStyle(
-                                fontSize: 13,
+                                fontSize: 12,
                                 color: AppColors.primaryEnd,
-                                fontWeight: FontWeight.bold,
-                                letterSpacing: 0.5,
+                                fontWeight: FontWeight.w600,
+                                letterSpacing: 0.3,
                               ),
                             ),
                           ),
@@ -248,15 +256,17 @@ class ProfileScreen extends StatelessWidget {
                       );
                     }),
 
+                  // Saved Cards menu item hidden (feature not available yet)
+
                   const Divider(height: 1, indent: 64),
 
-                  _buildMenuItem(context, Icons.credit_card_outlined, 'Saved Cards',
-                    subtitle: 'Pay faster with stored cards',
+                  _buildMenuItem(context, Icons.lock_outline_rounded, 'Change Password',
+                    subtitle: 'Update your account password',
                     onTap: () {
                       Navigator.push(
                         context,
                         MaterialPageRoute(
-                          builder: (_) => const SavedCardsScreen(),
+                          builder: (_) => const ChangePasswordVerifyScreen(),
                         ),
                       );
                     }),

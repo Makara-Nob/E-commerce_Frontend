@@ -3,7 +3,6 @@ class ApiConstants {
   // For Android Emulator use: http://10.0.2.2:8888
   // For physical device use: http://YOUR_IP:8888 (e.g., http://192.168.1.100:8888)
   static const String baseUrl = 'https://ecommerce-backend-v8k1.onrender.com';
-  // static const String baseUrl = 'http://10.107.53.225:5000';
 
   //api request time config
   static const Duration requestTimeout = Duration(seconds: 30);
@@ -19,6 +18,8 @@ class ApiConstants {
   static const String validateToken = '/api/v1/auth/validate-token';
   static const String getProfile = '/api/v1/user/profile';
   static const String updateProfile = '/api/v1/user/profile';
+  static const String sendChangePasswordOtp = '/api/v1/user/send-change-password-otp';
+  static const String changePassword = '/api/v1/user/change-password';
   
   // Public Product endpoints (no auth required)
   static const String publicProducts = '/api/v1/public/products/all';

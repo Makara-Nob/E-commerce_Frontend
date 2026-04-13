@@ -24,7 +24,7 @@ class AuthResponse {
 
 class UserData {
   final int id;
-  final String username;
+  final String? username;
   final String email;
   final String? firstName;
   final String? lastName;
@@ -36,7 +36,7 @@ class UserData {
 
   UserData({
     required this.id,
-    required this.username,
+    this.username,
     required this.email,
     this.firstName,
     this.lastName,
@@ -53,7 +53,7 @@ class UserData {
   factory UserData.fromJson(Map<String, dynamic> json) {
     return UserData(
       id: json['id'] is int ? json['id'] : int.tryParse(json['id']?.toString() ?? '') ?? 0,
-      username: json['username'] ?? '',
+      username: json['username'] as String?,
       email: json['email'] ?? '',
       firstName: json['firstName'],
       lastName: json['lastName'],

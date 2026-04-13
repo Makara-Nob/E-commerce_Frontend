@@ -1,4 +1,4 @@
-import 'package:e_commerce/screens/auth/login_screen.dart';
+import 'login_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:flutter_animate/flutter_animate.dart';
@@ -78,172 +78,118 @@ class _RegisterScreenState extends State<RegisterScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppColors.backgroundLight,
+      resizeToAvoidBottomInset: false,
       body: Stack(
         children: [
           SafeArea(
-            child: Center(
-              child: SingleChildScrollView(
-                padding: const EdgeInsets.all(24.0),
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    // Logo
-                    const BrandLogo(scale: 1.1).animate().fadeIn(duration: 800.ms).slideY(begin: -0.2, end: 0),
-                    
-                    const SizedBox(height: 32),
-                    Text(
-                      'Create Account',
-                      style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                        color: AppColors.textPrimaryLight,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ).animate().fadeIn(delay: 200.ms).slideY(begin: 0.2, end: 0),
-                    
-                    Text(
-                      'Join the premium experience',
-                      style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                        color: AppColors.textSecondaryLight,
-                      ),
-                    ).animate().fadeIn(delay: 300.ms).slideY(begin: 0.2, end: 0),
-                    
-                    const SizedBox(height: 48),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 16.0),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  // Logo — compact so it doesn't eat vertical space
+                  const BrandLogo(scale: 0.7).animate().fadeIn(duration: 800.ms),
 
-                    Container(
-                      padding: const EdgeInsets.all(24),
+                  const SizedBox(height: 12),
+
+                  Text(
+                    'Create Account',
+                    style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                      color: AppColors.textPrimaryLight,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ).animate().fadeIn(delay: 200.ms),
+
+                  const SizedBox(height: 2),
+
+                  Text(
+                    'Join the premium experience',
+                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                      color: AppColors.textSecondaryLight,
+                    ),
+                  ).animate().fadeIn(delay: 300.ms),
+
+                  const SizedBox(height: 20),
+
+                  Expanded(
+                    child: Container(
+                      padding: const EdgeInsets.all(20),
                       decoration: BoxDecoration(
                         color: Colors.white,
                         borderRadius: BorderRadius.circular(24),
                         boxShadow: [
                           BoxShadow(
-                            color: Colors.black.withOpacity(0.2),
-                            blurRadius: 30,
-                            offset: const Offset(0, 20),
+                            color: Colors.black.withOpacity(0.08),
+                            blurRadius: 20,
+                            offset: const Offset(0, 8),
                           ),
                         ],
                       ),
                       child: Form(
                         key: _formKey,
                         child: Column(
+                          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                           children: [
-                            Row(
-                              children: [
-                                Expanded(
-                                  child: TextFormField(
-                                    controller: _firstNameController,
-                                    decoration: InputDecoration(
-                                      labelText: 'First Name',
-                                      labelStyle: TextStyle(color: Colors.grey[600], fontSize: 14),
-                                      prefixIcon: Icon(Icons.badge_outlined, color: AppColors.primaryStart),
-                                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(16), borderSide: BorderSide.none),
-                                      filled: true,
-                                      fillColor: Colors.grey[100],
-                                      contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
-                                    ),
-                                    validator: (value) => value?.isEmpty ?? true ? 'Required' : null,
-                                  ),
-                                ),
-                                const SizedBox(width: 12),
-                                Expanded(
-                                  child: TextFormField(
-                                    controller: _lastNameController,
-                                    decoration: InputDecoration(
-                                      labelText: 'Last Name',
-                                      labelStyle: TextStyle(color: Colors.grey[600], fontSize: 14),
-                                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(16), borderSide: BorderSide.none),
-                                      filled: true,
-                                      fillColor: Colors.grey[100],
-                                      contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
-                                    ),
-                                    validator: (value) => value?.isEmpty ?? true ? 'Required' : null,
-                                  ),
-                                ),
-                              ],
+                            _buildField(
+                              controller: _firstNameController,
+                              label: 'First Name',
+                              icon: Icons.badge_outlined,
+                              validator: (v) => v?.isEmpty ?? true ? 'Required' : null,
                             ),
-                            const SizedBox(height: 16),
-                            TextFormField(
+                            _buildField(
+                              controller: _lastNameController,
+                              label: 'Last Name',
+                              icon: Icons.badge_outlined,
+                              validator: (v) => v?.isEmpty ?? true ? 'Required' : null,
+                            ),
+                            _buildField(
                               controller: _usernameController,
-                              decoration: InputDecoration(
-                                labelText: 'Username',
-                                labelStyle: TextStyle(color: Colors.grey[600], fontSize: 14),
-                                prefixIcon: Icon(Icons.person_outline_rounded, color: AppColors.primaryStart),
-                                border: OutlineInputBorder(borderRadius: BorderRadius.circular(16), borderSide: BorderSide.none),
-                                filled: true,
-                                fillColor: Colors.grey[100],
-                                contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
-                              ),
-                              validator: (value) => value?.isEmpty ?? true ? 'Please enter a username' : null,
+                              label: 'Username',
+                              icon: Icons.person_outline_rounded,
+                              validator: (v) => v?.isEmpty ?? true ? 'Please enter a username' : null,
                             ),
-                            const SizedBox(height: 16),
-                            TextFormField(
+                            _buildField(
                               controller: _emailController,
+                              label: 'Email',
+                              icon: Icons.email_outlined,
                               keyboardType: TextInputType.emailAddress,
-                              decoration: InputDecoration(
-                                labelText: 'Email',
-                                labelStyle: TextStyle(color: Colors.grey[600], fontSize: 14),
-                                prefixIcon: Icon(Icons.email_outlined, color: AppColors.primaryStart),
-                                border: OutlineInputBorder(borderRadius: BorderRadius.circular(16), borderSide: BorderSide.none),
-                                filled: true,
-                                fillColor: Colors.grey[100],
-                                contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
-                              ),
-                              validator: (value) {
-                                if (value?.isEmpty ?? true) return 'Please enter your email';
-                                if (!RegExp(r'^.+@[a-zA-Z]+\.{1}[a-zA-Z]+(\.{0,1}[a-zA-Z]+)$').hasMatch(value!)) {
-                                  return 'Please enter a valid email';
+                              validator: (v) {
+                                if (v?.isEmpty ?? true) return 'Please enter your email';
+                                if (!RegExp(r'^.+@[a-zA-Z]+\.{1}[a-zA-Z]+(\.{0,1}[a-zA-Z]+)$').hasMatch(v!)) {
+                                  return 'Invalid email';
                                 }
                                 return null;
                               },
                             ),
-                            const SizedBox(height: 16),
-                            TextFormField(
+                            _buildField(
                               controller: _passwordController,
-                              decoration: InputDecoration(
-                                labelText: 'Password',
-                                labelStyle: TextStyle(color: Colors.grey[600], fontSize: 14),
-                                prefixIcon: Icon(Icons.lock_outline_rounded, color: AppColors.primaryStart),
-                                suffixIcon: IconButton(
-                                  icon: Icon(_obscurePassword ? Icons.visibility_outlined : Icons.visibility_off_outlined, color: Colors.grey),
-                                  onPressed: () => setState(() => _obscurePassword = !_obscurePassword),
-                                ),
-                                border: OutlineInputBorder(borderRadius: BorderRadius.circular(16), borderSide: BorderSide.none),
-                                filled: true,
-                                fillColor: Colors.grey[100],
-                                contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
-                              ),
-                              obscureText: _obscurePassword,
-                              validator: (value) {
-                                if (value?.isEmpty ?? true) return 'Please enter a password';
-                                if (value!.length < 6) return 'Password must be at least 6 characters';
+                              label: 'Password',
+                              icon: Icons.lock_outline_rounded,
+                              obscure: _obscurePassword,
+                              onToggleObscure: () => setState(() => _obscurePassword = !_obscurePassword),
+                              validator: (v) {
+                                if (v?.isEmpty ?? true) return 'Please enter a password';
+                                if (v!.length < 6) return 'Min. 6 characters';
                                 return null;
                               },
                             ),
-                            const SizedBox(height: 24),
                             SizedBox(
                               width: double.infinity,
-                              height: 54,
+                              height: 50,
                               child: FilledButton(
                                 onPressed: _isLoading ? null : _handleRegister,
                                 style: FilledButton.styleFrom(
                                   padding: EdgeInsets.zero,
                                   backgroundColor: Colors.transparent,
                                   shadowColor: Colors.transparent,
-                                  shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(16),
-                                  ),
+                                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
                                 ).copyWith(
-                                  backgroundColor: WidgetStateProperty.resolveWith((states) => null),
+                                  backgroundColor: WidgetStateProperty.resolveWith((_) => null),
                                 ),
                                 child: Ink(
                                   decoration: BoxDecoration(
                                     gradient: AppColors.primaryGradient,
-                                    borderRadius: BorderRadius.circular(16),
-                                    boxShadow: [
-                                      BoxShadow(
-                                        color: AppColors.primaryStart.withOpacity(0.3),
-                                        blurRadius: 12,
-                                        offset: const Offset(0, 6),
-                                      ),
-                                    ],
+                                    borderRadius: BorderRadius.circular(14),
                                   ),
                                   child: Container(
                                     alignment: Alignment.center,
@@ -252,7 +198,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                                             height: 20, width: 20,
                                             child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
                                           )
-                                        : const Text('Register', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w900, color: Colors.white, letterSpacing: 1)),
+                                        : const Text('Register', style: TextStyle(fontSize: 15, fontWeight: FontWeight.w900, color: Colors.white, letterSpacing: 1)),
                                   ),
                                 ),
                               ),
@@ -260,20 +206,38 @@ class _RegisterScreenState extends State<RegisterScreen> {
                           ],
                         ),
                       ),
-                    ).animate().fadeIn(delay: 500.ms).slideY(begin: 0.1, end: 0),
-                    
-                    const SizedBox(height: 24),
-                    TextButton(
-                      onPressed: () => Navigator.of(context).push(
-                        MaterialPageRoute(builder: (_) => const LoginScreen())
+                    ),
+                  ),
+
+                  const SizedBox(height: 12),
+
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Text(
+                        'Already have an account? ',
+                        style: TextStyle(color: Colors.grey[600], fontSize: 13),
                       ),
-                      child: Text(
-                        'Already have an account? Login',
-                        style: TextStyle(color: AppColors.primaryStart, fontWeight: FontWeight.bold),
+                      GestureDetector(
+                        onTap: () => Navigator.of(context).push(
+                          MaterialPageRoute(builder: (_) => const LoginScreen()),
+                        ),
+                        child: const Text(
+                          'Login',
+                          style: TextStyle(
+                            color: AppColors.primaryStart,
+                            fontSize: 13,
+                            fontWeight: FontWeight.w600,
+                            decoration: TextDecoration.underline,
+                            decorationColor: AppColors.primaryStart,
+                          ),
+                        ),
                       ),
-                    ).animate().fadeIn(delay: 600.ms),
-                  ],
-                ),
+                    ],
+                  ).animate().fadeIn(delay: 600.ms),
+
+                  const SizedBox(height: 8),
+                ],
               ),
             ),
           ),
@@ -293,6 +257,46 @@ class _RegisterScreenState extends State<RegisterScreen> {
           ),
         ],
       ),
+    );
+  }
+
+  Widget _buildField({
+    required TextEditingController controller,
+    required String label,
+    required IconData icon,
+    bool obscure = false,
+    VoidCallback? onToggleObscure,
+    TextInputType keyboardType = TextInputType.text,
+    required String? Function(String?) validator,
+  }) {
+    return TextFormField(
+      controller: controller,
+      obscureText: obscure,
+      keyboardType: keyboardType,
+      decoration: InputDecoration(
+        labelText: label,
+        labelStyle: TextStyle(color: Colors.grey[600], fontSize: 13),
+        prefixIcon: Icon(icon, color: AppColors.primaryStart, size: 20),
+        suffixIcon: onToggleObscure != null
+            ? IconButton(
+                icon: Icon(
+                  obscure ? Icons.visibility_outlined : Icons.visibility_off_outlined,
+                  color: Colors.grey,
+                  size: 20,
+                ),
+                onPressed: onToggleObscure,
+              )
+            : null,
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(14),
+          borderSide: BorderSide.none,
+        ),
+        filled: true,
+        fillColor: Colors.grey[100],
+        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        isDense: true,
+      ),
+      validator: validator,
     );
   }
 }

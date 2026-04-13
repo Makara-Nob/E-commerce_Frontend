@@ -265,6 +265,56 @@ class AuthProvider with ChangeNotifier {
     }
   }
 
+  // Send OTP for password change
+  Future<bool> sendChangePasswordOtp() async {
+    _isLoading = true;
+    _errorMessage = null;
+    notifyListeners();
+
+    try {
+      final response = await _authService.sendChangePasswordOtp();
+      _isLoading = false;
+      if (response.success) {
+        notifyListeners();
+        return true;
+      } else {
+        _errorMessage = response.message.isNotEmpty ? response.message : 'Failed to send verification code';
+        notifyListeners();
+        return false;
+      }
+    } catch (e) {
+      _errorMessage = 'An error occurred: $e';
+      _isLoading = false;
+      notifyListeners();
+      return false;
+    }
+  }
+
+  // Change Password (with OTP)
+  Future<bool> changePassword(String otp, String newPassword) async {
+    _isLoading = true;
+    _errorMessage = null;
+    notifyListeners();
+
+    try {
+      final response = await _authService.changePassword(otp, newPassword);
+      _isLoading = false;
+      if (response.success) {
+        notifyListeners();
+        return true;
+      } else {
+        _errorMessage = response.message.isNotEmpty ? response.message : 'Failed to change password';
+        notifyListeners();
+        return false;
+      }
+    } catch (e) {
+      _errorMessage = 'An error occurred: $e';
+      _isLoading = false;
+      notifyListeners();
+      return false;
+    }
+  }
+
   // Upload and Update Profile Image
   Future<bool> uploadProfileImage(File file) async {
     _isLoading = true;

@@ -142,6 +142,26 @@ class AuthService {
     return await _apiService.uploadFile(file);
   }
 
+  // Send OTP for password change
+  Future<ApiResponse<dynamic>> sendChangePasswordOtp() async {
+    return await _apiService.post(
+      ApiConstants.sendChangePasswordOtp,
+      body: {},
+      requiresAuth: true,
+      fromJson: (json) => json,
+    );
+  }
+
+  // Change Password (requires OTP)
+  Future<ApiResponse<dynamic>> changePassword(String otp, String newPassword) async {
+    return await _apiService.post(
+      ApiConstants.changePassword,
+      body: {'otp': otp, 'newPassword': newPassword},
+      requiresAuth: true,
+      fromJson: (json) => json,
+    );
+  }
+
   // Update Profile with Image URL
   Future<ApiResponse<UserData>> updateProfileWithImage(String imageUrl) async {
       // Re-uses the existing update endpoint, assuming it accepts profileUrl

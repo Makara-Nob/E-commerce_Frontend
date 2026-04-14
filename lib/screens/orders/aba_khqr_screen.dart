@@ -1,9 +1,13 @@
 import 'dart:convert';
 import 'dart:async';
+import 'dart:io';
 import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_svg/flutter_svg.dart';
+import 'package:intl/intl.dart';
+import 'package:path_provider/path_provider.dart';
+import 'package:share_plus/share_plus.dart';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // MEASUREMENTS derived directly from KHQR_-_digital_payment.svg
@@ -206,6 +210,30 @@ class _AbaKhqrScreenState extends State<AbaKhqrScreen> {
     super.dispose();
   }
 
+  Future<void> _downloadQr() async {
+    if (_imageBytes == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('QR code is not available yet')),
+      );
+      return;
+    }
+    try {
+      final dir = await getTemporaryDirectory();
+      final file = File('${dir.path}/khqr_${widget.tranId}.png');
+      await file.writeAsBytes(_imageBytes!);
+      await Share.shareXFiles(
+        [XFile(file.path, mimeType: 'image/png')],
+        text: 'NAGA KHQR Payment Code',
+      );
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Failed to save QR: $e')),
+        );
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -229,7 +257,8 @@ class _AbaKhqrScreenState extends State<AbaKhqrScreen> {
             child: _KhqrCard(
               amount: widget.amount,
               imageBytes: _imageBytes,
-              merchantName: widget.merchantName, // ➕ NEW — pass merchant name down
+              merchantName: widget.merchantName,
+              tranId: widget.tranId,
             )
                 .animate()
                 .fadeIn(duration: 350.ms)
@@ -244,11 +273,7 @@ class _AbaKhqrScreenState extends State<AbaKhqrScreen> {
             mainAxisSize: MainAxisSize.min,
             children: [
               TextButton.icon(
-                onPressed: () {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('Saving QR to gallery...')),
-                  );
-                },
+                onPressed: _downloadQr,
                 icon: const Icon(Icons.download_rounded,
                     color: Color(0xFF00B4DB), size: 20),
                 label: const Text(
@@ -274,12 +299,14 @@ class _AbaKhqrScreenState extends State<AbaKhqrScreen> {
 class _KhqrCard extends StatelessWidget {
   final String amount;
   final Uint8List? imageBytes;
-  final String merchantName; // ➕ NEW — display the real merchant name
+  final String merchantName;
+  final String tranId;
 
   const _KhqrCard({
     required this.amount,
     required this.imageBytes,
     required this.merchantName,
+    required this.tranId,
   });
 
   @override
@@ -374,7 +401,7 @@ class _KhqrCard extends StatelessWidget {
 
           // ── QR CODE ─────────────────────────────────────────────────────────
           Padding(
-             padding: const EdgeInsets.fromLTRB(32, 40, 32, 48),
+             padding: const EdgeInsets.fromLTRB(32, 40, 32, 32),
              child: imageBytes != null
                  ? Image.memory(
                      imageBytes!,
@@ -389,8 +416,161 @@ class _KhqrCard extends StatelessWidget {
                      ),
                    ),
           ),
+
+          // ── PAYMENT SUMMARY ──────────────────────────────────────────────────
+          Container(
+            margin: const EdgeInsets.fromLTRB(20, 0, 20, 24),
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: const Color(0xFFF8F9FA),
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: Colors.grey.shade200),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  'Payment Summary',
+                  style: TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w700,
+                    color: Colors.black54,
+                    letterSpacing: 0.4,
+                  ),
+                ),
+                const SizedBox(height: 12),
+                _SummaryRow(
+                  label: 'Merchant',
+                  value: merchantName,
+                ),
+                const SizedBox(height: 8),
+                _SummaryRow(
+                  label: 'Amount',
+                  value: '\$$amount USD',
+                  valueStyle: const TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w700,
+                    color: Color(0xFFE21A1A),
+                  ),
+                ),
+                const SizedBox(height: 8),
+                _SummaryRow(
+                  label: 'Method',
+                  value: 'ABA KHQR',
+                ),
+                const SizedBox(height: 8),
+                _SummaryRow(
+                  label: 'Transaction ID',
+                  value: tranId,
+                  valueStyle: const TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w500,
+                    color: Colors.black87,
+                    fontFamily: 'monospace',
+                  ),
+                ),
+                const SizedBox(height: 8),
+                _SummaryRow(
+                  label: 'Date & Time',
+                  value: DateFormat('dd MMM yyyy, hh:mm a').format(DateTime.now()),
+                ),
+                const SizedBox(height: 10),
+                const Divider(height: 1, color: Color(0xFFE0E0E0)),
+                const SizedBox(height: 10),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    const Text(
+                      'Status',
+                      style: TextStyle(
+                        fontSize: 13,
+                        color: Colors.black54,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 10, vertical: 4),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFFFF8E1),
+                        borderRadius: BorderRadius.circular(20),
+                        border: Border.all(
+                            color: const Color(0xFFFFD54F), width: 1),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Container(
+                            width: 7,
+                            height: 7,
+                            decoration: const BoxDecoration(
+                              color: Color(0xFFFFA000),
+                              shape: BoxShape.circle,
+                            ),
+                          ),
+                          const SizedBox(width: 6),
+                          const Text(
+                            'Awaiting Payment',
+                            style: TextStyle(
+                              fontSize: 12,
+                              fontWeight: FontWeight.w600,
+                              color: Color(0xFFFFA000),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
         ],
       ),
       ));
+  }
+}
+
+// ── Reusable summary row ──────────────────────────────────────────────────────
+class _SummaryRow extends StatelessWidget {
+  final String label;
+  final String value;
+  final TextStyle? valueStyle;
+
+  const _SummaryRow({
+    required this.label,
+    required this.value,
+    this.valueStyle,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          label,
+          style: const TextStyle(
+            fontSize: 13,
+            color: Colors.black54,
+            fontWeight: FontWeight.w500,
+          ),
+        ),
+        const SizedBox(width: 12),
+        Flexible(
+          child: Text(
+            value,
+            textAlign: TextAlign.right,
+            style: valueStyle ??
+                const TextStyle(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w600,
+                  color: Colors.black87,
+                ),
+          ),
+        ),
+      ],
+    );
   }
 }

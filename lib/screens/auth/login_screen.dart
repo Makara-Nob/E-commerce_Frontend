@@ -7,6 +7,7 @@ import '../../theme/app_colors.dart';
 import '../../utils/toast_helper.dart'; // Kept imports consistent with read file
 import '../home/home_screen.dart';
 import 'register_screen.dart';
+import 'otp_verification_screen.dart';
 import '../../widgets/brand_logo.dart';
 
 class LoginScreen extends StatefulWidget {
@@ -17,8 +18,8 @@ class LoginScreen extends StatefulWidget {
 }
 
 class _LoginScreenState extends State<LoginScreen> {
-  final _usernameController = TextEditingController(text: 'admin@gmail.com');
-  final _passwordController = TextEditingController(text: '88889999');
+  final _usernameController = TextEditingController();
+  final _passwordController = TextEditingController();
   final _formKey = GlobalKey<FormState>();
   bool _isLoading = false;
   bool _obscurePassword = true;
@@ -56,7 +57,17 @@ class _LoginScreenState extends State<LoginScreen> {
             MaterialPageRoute(builder: (_) => const HomeScreen()),
           );
         } else {
-          ToastHelper.error(context, authProvider.errorMessage ?? 'Login failed');
+          if (authProvider.unverifiedEmail != null) {
+            // Redirect to OTP verification screen
+            Navigator.of(context).push(
+              MaterialPageRoute(
+                builder: (_) => OtpVerificationScreen(email: authProvider.unverifiedEmail!),
+              ),
+            );
+            ToastHelper.info(context, authProvider.errorMessage ?? 'Please verify your account');
+          } else {
+            ToastHelper.error(context, authProvider.errorMessage ?? 'Login failed');
+          }
         }
       } catch (e) {
         ToastHelper.error(context, 'An unexpected error occurred: $e');

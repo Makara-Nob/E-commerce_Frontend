@@ -1198,12 +1198,15 @@ $shortDesc
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              const Text(
-                'Customer Reviews',
-                style: TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
-                    color: Color(0xFF1A1A2E)),
+              const Flexible(
+                child: Text(
+                  'Customer Reviews',
+                  style: TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                      color: Color(0xFF1A1A2E)),
+                  overflow: TextOverflow.ellipsis,
+                ),
               ),
               if (_myReview == null)
                 TextButton.icon(
@@ -1411,6 +1414,16 @@ $shortDesc
   }
 
   void _showReviewDialog(BuildContext context) {
+    // Guard: redirect to login if not authenticated
+    final auth = Provider.of<AuthProvider>(context, listen: false);
+    if (!auth.isAuthenticated) {
+      Navigator.push(
+        context,
+        MaterialPageRoute(builder: (_) => const LoginScreen()),
+      );
+      return;
+    }
+
     int rating = 5;
     final titleController = TextEditingController();
     final bodyController = TextEditingController();
@@ -1445,21 +1458,19 @@ $shortDesc
               const SizedBox(height: 16),
               
               // Star Selector
-              Center(
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: List.generate(5, (i) {
-                    final isActive = (i + 1) <= rating;
-                    return IconButton(
-                      icon: Icon(
-                        isActive ? Icons.star_rounded : Icons.star_outline_rounded,
-                        color: isActive ? _kStarColor : Colors.grey[400],
-                        size: 42,
-                      ),
-                      onPressed: () => setModalState(() => rating = i + 1),
-                    );
-                  }),
-                ),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: List.generate(5, (i) {
+                  final isActive = (i + 1) <= rating;
+                  return IconButton(
+                    icon: Icon(
+                      isActive ? Icons.star_rounded : Icons.star_outline_rounded,
+                      color: isActive ? _kStarColor : Colors.grey[400],
+                      size: 42,
+                    ),
+                    onPressed: () => setModalState(() => rating = i + 1),
+                  );
+                }),
               ),
               const SizedBox(height: 20),
               

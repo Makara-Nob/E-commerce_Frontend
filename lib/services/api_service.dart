@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 import 'package:http/http.dart' as http;
@@ -43,10 +44,17 @@ class ApiService {
       final response = await http.get(url, headers: headers).timeout(
         ApiConstants.requestTimeout,
         onTimeout: () {
-          throw const SocketException('Connection timed out');
+          throw TimeoutException('Connection timed out');
         },
       );
       return _handleResponse<T>(response, fromJson, endpoint);
+    } on TimeoutException catch (e) {
+      print('⏱️ ApiService: Timeout for $endpoint - $e');
+      return ApiResponse<T>(
+        success: false,
+        message: 'Server is taking too long to respond. Please try again.',
+        error: e.toString(),
+      );
     } on SocketException catch (e) {
       print('❌ ApiService: SocketException for $endpoint - $e');
       return ApiResponse<T>(
@@ -78,11 +86,18 @@ class ApiService {
       final response = await http.get(url, headers: headers).timeout(
         ApiConstants.requestTimeout,
         onTimeout: () {
-          throw const SocketException('Connection timed out');
+          throw TimeoutException('Connection timed out');
         },
       );
 
       return _handleResponseList<T>(response, fromJson, endpoint);
+    } on TimeoutException catch (e) {
+      print('⏱️ ApiService: Timeout for $endpoint - $e');
+      return ApiResponse<List<T>>(
+        success: false,
+        message: 'Server is taking too long to respond. Please try again.',
+        error: e.toString(),
+      );
     } on SocketException catch (e) {
       print('❌ ApiService: SocketException for $endpoint - $e');
       return ApiResponse<List<T>>(
@@ -119,11 +134,18 @@ class ApiService {
       ).timeout(
         ApiConstants.requestTimeout,
         onTimeout: () {
-          throw const SocketException('Connection timed out');
+          throw TimeoutException('Connection timed out');
         },
       );
 
       return _handleResponse<T>(response, fromJson, endpoint);
+    } on TimeoutException catch (e) {
+      print('⏱️ ApiService: Timeout for $endpoint - $e');
+      return ApiResponse<T>(
+        success: false,
+        message: 'Server is taking too long to respond. Please try again.',
+        error: e.toString(),
+      );
     } on SocketException catch (e) {
       print('❌ ApiService: SocketException for $endpoint - $e');
       return ApiResponse<T>(
@@ -166,11 +188,17 @@ class ApiService {
       ).timeout(
         ApiConstants.requestTimeout,
         onTimeout: () {
-          throw const SocketException('Connection timed out');
+          throw TimeoutException('Connection timed out');
         },
       );
 
       return _handleResponse<T>(response, fromJson, endpoint);
+    } on TimeoutException catch (e) {
+      return ApiResponse<T>(
+        success: false,
+        message: 'Server is taking too long to respond. Please try again.',
+        error: e.toString(),
+      );
     } on SocketException {
       return ApiResponse<T>(
         success: false,
@@ -200,10 +228,16 @@ class ApiService {
       final response = await http.delete(url, headers: headers).timeout(
         ApiConstants.requestTimeout,
         onTimeout: () {
-          throw const SocketException('Connection timed out');
+          throw TimeoutException('Connection timed out');
         },
       );
       return _handleResponse<T>(response, fromJson, endpoint);
+    } on TimeoutException catch (e) {
+      return ApiResponse<T>(
+        success: false,
+        message: 'Server is taking too long to respond. Please try again.',
+        error: e.toString(),
+      );
     } on SocketException {
       return ApiResponse<T>(
         success: false,
@@ -247,7 +281,7 @@ class ApiService {
       final streamedResponse = await request.send().timeout(
         ApiConstants.uploadTimeout,
         onTimeout: () {
-          throw const SocketException('Connection timed out');
+          throw TimeoutException('Connection timed out');
         },
       );
       final response = await http.Response.fromStream(streamedResponse);
@@ -304,22 +338,22 @@ class ApiService {
 
       if (response.statusCode >= 200 && response.statusCode < 300) {
         if (isSuccess) {
-            print('✅ ApiService: Success response for $endpoint');
-            return ApiResponse<T>.fromJson(jsonResponse, fromJson);
+          print('✅ ApiService: Success response for $endpoint');
+          return ApiResponse<T>.fromJson(jsonResponse, fromJson);
         } else {
-            print('❌ ApiService: Error response for $endpoint - ${jsonResponse['message']} (Status: ${jsonResponse['status']})');
-            return ApiResponse<T>(
-              success: false,
-              message: jsonResponse['message'] ?? 'Request failed',
-              error: jsonResponse['error'] ?? 'Unknown error',
-            );
+          print('❌ ApiService: Error response for $endpoint - ${jsonResponse['message']} (Status: ${jsonResponse['status']})');
+          return ApiResponse<T>(
+            success: false,
+            message: jsonResponse['message'] ?? 'Request failed',
+            error: jsonResponse,
+          );
         }
       } else {
-        print('❌ ApiService: Error response - ${jsonResponse['message']}');
+        print('❌ ApiService: Error response - ${response.statusCode}');
         return ApiResponse<T>(
           success: false,
           message: jsonResponse['message'] ?? 'Request failed',
-          error: jsonResponse['error'] ?? 'Unknown error',
+          error: jsonResponse,
         );
       }
     } catch (e) {
@@ -386,18 +420,18 @@ class ApiService {
           );
         } else {
              print('❌ ApiService: Error response for $endpoint - ${jsonResponse['message']}');
-             return ApiResponse<List<T>>(
+            return ApiResponse<List<T>>(
               success: false,
               message: jsonResponse['message'] ?? 'Request failed',
-              error: jsonResponse['error'],
-             );
+              error: jsonResponse,
+            );
         }
       } else {
         print('❌ ApiService: Error response for $endpoint - ${response.statusCode}');
         return ApiResponse<List<T>>(
           success: false,
           message: jsonResponse['message'] ?? 'Request failed',
-          error: jsonResponse['error'] ?? 'Unknown error',
+          error: jsonResponse,
         );
       }
     } catch (e) {

@@ -180,7 +180,7 @@ class ProfileScreen extends StatelessWidget {
                           Padding(
                             padding: const EdgeInsets.only(top: 2),
                             child: Text(
-                              '@$username',
+                              '$username',
                               style: TextStyle(
                                 fontSize: 12,
                                 color: AppColors.primaryEnd,

@@ -15,12 +15,14 @@ class AuthProvider with ChangeNotifier {
   String? _errorMessage;
   bool _isAuthenticated = false;
   String? _token;
+  String? _unverifiedEmail;
 
   UserData? get currentUser => _currentUser;
   bool get isLoading => _isLoading;
   String? get errorMessage => _errorMessage;
   bool get isAuthenticated => _isAuthenticated;
   String? get token => _token;
+  String? get unverifiedEmail => _unverifiedEmail;
 
   // Try to auto-login with stored token
   Future<bool> tryAutoLogin() async {
@@ -78,11 +80,25 @@ class AuthProvider with ChangeNotifier {
 
         _isAuthenticated = true;
         _isLoading = false;
+        _unverifiedEmail = null; // Clear on success
         notifyListeners();
         // Register FCM token now that the JWT is saved
         await NotificationService().registerDeviceToken();
         return true;
       } else {
+        // Check if account is not verified
+        // The backend wraps extra fields under response.error['data']
+        if (response.error is Map) {
+          final nestedData = response.error['data'];
+          if (nestedData is Map && nestedData['isVerified'] == false) {
+            _unverifiedEmail = nestedData['email']?.toString() ?? username;
+          } else {
+            _unverifiedEmail = null;
+          }
+        } else {
+          _unverifiedEmail = null;
+        }
+
         _errorMessage = response.message.isNotEmpty
             ? response.message
             : (response.data?.token.isEmpty ?? true ? 'Login failed: No token received' : 'Login failed');

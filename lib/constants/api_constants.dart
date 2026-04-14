@@ -1,12 +1,16 @@
 class ApiConstants {
   // Base URL - Change this to your computer's IP address for physical device testing
   // For Android Emulator use: http://10.0.2.2:8888
+  // For iOS Simulator or Web use: http://localhost:8888
   // For physical device use: http://YOUR_IP:8888 (e.g., http://192.168.1.100:8888)
-  static const String baseUrl = 'https://ecommerce-backend-v8k1.onrender.com';
+  // static const String baseUrl = 'http://10.0.2.2:5000'; // Android emulator (local dev)
+  // static const String baseUrl = 'http://192.168.x.x:5000'; // Physical device (local dev)
+  // static const String baseUrl = 'https://ecommerce-backend-v8k1.onrender.com'; // Render
+  static const String baseUrl = 'http://52.90.157.237:5000';
 
   //api request time config
-  static const Duration requestTimeout = Duration(seconds: 30);
-  static const Duration uploadTimeout = Duration(seconds: 90);
+  static const Duration requestTimeout = Duration(seconds: 60);
+  static const Duration uploadTimeout = Duration(seconds: 120);
 
   // API Endpoints
   
